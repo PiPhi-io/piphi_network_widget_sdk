@@ -1,5 +1,5 @@
 {
-  "name": "@piphi/widget-sdk",
+  "name": "piphi-network-widget-sdk",
   "version": "0.1.0",
   "description": "TypeScript SDK for building sandboxed PiPhi dashboard widgets.",
   "type": "module",

@@ -1,13 +1,13 @@
 # PiPhi Widget SDK
 
-`@piphi/widget-sdk` is the browser-safe TypeScript SDK for building sandboxed PiPhi dashboard widgets.
+`piphi-network-widget-sdk` is the browser-safe TypeScript SDK for building sandboxed PiPhi dashboard widgets.
 
 The SDK provides the versioned host protocol, portable widget and binding types, a typed client, lifecycle subscriptions, device state reads, permission-aware commands, navigation, settings, and responsive height reporting. Device integrations and server runtimes remain in PiPhi's Python Runtime SDK.
 
 ## Install
 
 ```bash
-npm install @piphi/widget-sdk
+npm install piphi-network-widget-sdk
 ```
 
 ## Use the injected host
@@ -15,7 +15,7 @@ npm install @piphi/widget-sdk
 PiPhi injects the host before loading the widget entry bundle:
 
 ```ts
-import { getInjectedPiPhiWidgetHost } from "@piphi/widget-sdk";
+import { getInjectedPiPhiWidgetHost } from "piphi-network-widget-sdk";
 
 const host = getInjectedPiPhiWidgetHost();
 const context = await host.getContext();
@@ -56,7 +56,7 @@ await host.navigate({ path: "/dashboards", newTab: false });
 Most widgets should use the injected host. A framework adapter or test harness can create its own bridge client:
 
 ```ts
-import { createPiPhiWidgetClient } from "@piphi/widget-sdk";
+import { createPiPhiWidgetClient } from "piphi-network-widget-sdk";
 
 const client = createPiPhiWidgetClient();
 await client.ready();
@@ -67,7 +67,7 @@ client.destroy();
 
 ## Package boundaries
 
-- `@piphi/widget-sdk`: browser widget API and protocol types.
+- `piphi-network-widget-sdk`: browser widget API and protocol types.
 - PiPhi Runtime SDK: integration lifecycle, capabilities, commands, telemetry, and widget manifest helpers.
 - PiPhi Network Core: trusted host implementation, permission enforcement, iframe isolation, and dashboard rendering.
 

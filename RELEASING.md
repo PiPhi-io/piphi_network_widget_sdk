@@ -1,4 +1,4 @@
-# Releasing `@piphi/widget-sdk`
+# Releasing `piphi-network-widget-sdk`
 
 Releases are immutable and tag-driven. The version in `package.json` is the source of truth, and the release workflow refuses to publish when its Git tag does not exactly equal `v<version>`.
 
