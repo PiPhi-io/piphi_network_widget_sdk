@@ -81,3 +81,5 @@ npm run check
 npm test
 npm run build
 ```
+
+Pull requests and pushes to `main` run the package against Node 22.14 and Node 24. Version tags publish through npm trusted publishing and create a matching GitHub Release. See [RELEASING.md](./RELEASING.md) for the required one-time npm configuration and release procedure.

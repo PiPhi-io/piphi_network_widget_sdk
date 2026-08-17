@@ -6,7 +6,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "RELEASING.md"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
