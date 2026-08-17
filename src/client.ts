@@ -3,11 +3,13 @@ import {
   PIPHI_WIDGET_HOST_VERSION,
   isPiPhiWidgetBootstrap,
   isPiPhiWidgetHostResponse,
+  isPiPhiWidgetHostEvent,
   type PiPhiWidgetBinding,
   type PiPhiWidgetBootstrap,
   type PiPhiWidgetHostMethod,
   type PiPhiWidgetHostRequest,
   type PiPhiWidgetPermission,
+  type PiPhiWidgetHostEvent,
 } from "./protocol.js";
 
 export interface PiPhiWidgetCapabilityStateParams {
@@ -42,6 +44,10 @@ export interface PiPhiWidgetHostApi {
   getContext<T extends Record<string, unknown> = Record<string, unknown>>(): Promise<T>;
   getBinding(): Promise<{ binding: PiPhiWidgetBinding | null; source?: Record<string, unknown> }>;
   getCapabilityState<T = unknown>(params?: PiPhiWidgetCapabilityStateParams): Promise<T>;
+  subscribeState<T = unknown>(
+    params: PiPhiWidgetCapabilityStateParams,
+    callback: (event: PiPhiWidgetHostEvent<T>["payload"]) => void,
+  ): Promise<() => Promise<void>>;
   getSettings<T extends Record<string, unknown> = Record<string, unknown>>(): Promise<T>;
   listPermissions(): Promise<PiPhiWidgetPermission[]>;
   navigate(params: PiPhiWidgetNavigationParams): Promise<{ ok: boolean }>;
@@ -84,6 +90,7 @@ export function createPiPhiWidgetClient(
   const timeoutMs = normalizeTimeout(options.timeoutMs);
   const listeners = new Set<(bootstrap: PiPhiWidgetBootstrap) => void>();
   const pending = new Map<string, PendingRequest>();
+  const stateListeners = new Map<string, (event: PiPhiWidgetHostEvent["payload"]) => void>();
   let bootstrap: PiPhiWidgetBootstrap | null = null;
   let sequence = 0;
 
@@ -93,6 +100,11 @@ export function createPiPhiWidgetClient(
     if (isPiPhiWidgetBootstrap(event.data)) {
       bootstrap = event.data;
       for (const listener of listeners) listener(bootstrap);
+      return;
+    }
+
+    if (isPiPhiWidgetHostEvent(event.data)) {
+      stateListeners.get(event.data.subscriptionId)?.(event.data.payload);
       return;
     }
 
@@ -151,6 +163,7 @@ export function createPiPhiWidgetClient(
   function destroy(): void {
     widgetWindow.removeEventListener("message", handleMessage);
     listeners.clear();
+    stateListeners.clear();
     for (const request of pending.values()) {
       widgetWindow.clearTimeout(request.timeoutId);
       request.reject(
@@ -173,6 +186,16 @@ export function createPiPhiWidgetClient(
     getContext: () => request("host.getContext"),
     getBinding: () => request("host.getBinding"),
     getCapabilityState: (params = {}) => request("host.getCapabilityState", { ...params }),
+    async subscribeState(params, callback) {
+      const result = await request<{ subscriptionId: string }>("host.subscribeState", { ...params });
+      const subscriptionId = String(result?.subscriptionId || "").trim();
+      if (!subscriptionId) throw new PiPhiWidgetHostRequestError("HOST_INVALID_RESPONSE", "Host did not return a state subscription ID.");
+      stateListeners.set(subscriptionId, callback as (event: PiPhiWidgetHostEvent["payload"]) => void);
+      return async () => {
+        stateListeners.delete(subscriptionId);
+        await request("host.unsubscribeState", { subscriptionId });
+      };
+    },
     getSettings: () => request("host.getSettings"),
     listPermissions: () => request("host.listPermissions"),
     navigate: (params) => request("host.navigate", { ...params }),

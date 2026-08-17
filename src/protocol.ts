@@ -5,6 +5,8 @@ export type PiPhiWidgetHostMethod =
   | "host.getContext"
   | "host.getBinding"
   | "host.getCapabilityState"
+  | "host.subscribeState"
+  | "host.unsubscribeState"
   | "host.getSettings"
   | "host.listPermissions"
   | "host.navigate"
@@ -102,6 +104,22 @@ export interface PiPhiWidgetHostResponse {
   error?: PiPhiWidgetHostError;
 }
 
+export type PiPhiWidgetStateEventKind = "snapshot" | "point" | "status" | "error";
+
+export interface PiPhiWidgetHostEvent<T = unknown> {
+  protocol: string;
+  version: string;
+  type: "piphi.widget.event";
+  event: "state";
+  subscriptionId: string;
+  payload: {
+    kind: PiPhiWidgetStateEventKind;
+    data?: T;
+    status?: string;
+    error?: { code: string; message: string };
+  };
+}
+
 export const DEFAULT_WIDGET_LAYOUT_CONTRACT: Required<PiPhiWidgetLayoutContract> = {
   defaultHeight: 180,
   minHeight: 120,
@@ -168,6 +186,17 @@ export function isPiPhiWidgetHostResponse(value: unknown): value is PiPhiWidgetH
     typeof candidate.requestId === "string" &&
     typeof candidate.success === "boolean"
   );
+}
+
+export function isPiPhiWidgetHostEvent(value: unknown): value is PiPhiWidgetHostEvent {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<PiPhiWidgetHostEvent>;
+  return candidate.type === "piphi.widget.event"
+    && candidate.protocol === PIPHI_WIDGET_HOST_PROTOCOL
+    && candidate.version === PIPHI_WIDGET_HOST_VERSION
+    && candidate.event === "state"
+    && typeof candidate.subscriptionId === "string"
+    && Boolean(candidate.payload && typeof candidate.payload === "object");
 }
 
 function clampHeight(value: unknown, fallback: number, min: number, max: number): number {

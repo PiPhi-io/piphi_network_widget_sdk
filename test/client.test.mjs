@@ -115,3 +115,47 @@ test("reports a clear error outside the PiPhi widget host", () => {
     /requires a browser window/,
   );
 });
+
+test("subscribes to typed state events and unsubscribes cleanly", async () => {
+  const harness = createWindowHarness();
+  const client = createPiPhiWidgetClient({ window: harness.window });
+  const received = [];
+  const subscriptionPromise = client.subscribeState(
+    { capabilityIds: ["temperature", "humidity"] },
+    (event) => received.push(event),
+  );
+  const subscribeRequest = harness.requests[0].payload;
+  assert.equal(subscribeRequest.method, "host.subscribeState");
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: subscribeRequest.requestId,
+    success: true,
+    result: { subscriptionId: "state-1" },
+  });
+  const unsubscribe = await subscriptionPromise;
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.event",
+    event: "state",
+    subscriptionId: "state-1",
+    payload: { kind: "point", data: { capabilityId: "temperature", value: 22 } },
+  });
+  assert.deepEqual(received, [{ kind: "point", data: { capabilityId: "temperature", value: 22 } }]);
+
+  const unsubscribePromise = unsubscribe();
+  const unsubscribeRequest = harness.requests[1].payload;
+  assert.equal(unsubscribeRequest.method, "host.unsubscribeState");
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: unsubscribeRequest.requestId,
+    success: true,
+    result: { ok: true },
+  });
+  await unsubscribePromise;
+  client.destroy();
+});

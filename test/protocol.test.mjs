@@ -6,6 +6,7 @@ import {
   PIPHI_WIDGET_HOST_PROTOCOL,
   PIPHI_WIDGET_HOST_VERSION,
   isPiPhiWidgetBootstrap,
+  isPiPhiWidgetHostEvent,
   normalizeWidgetLayoutContract,
   normalizeWidgetRuntimeHeight,
   normalizeWidgetSdkSettings,
@@ -14,6 +15,18 @@ import {
 test("exports the stable v1 protocol", () => {
   assert.equal(PIPHI_WIDGET_HOST_PROTOCOL, "piphi.widget.host");
   assert.equal(PIPHI_WIDGET_HOST_VERSION, "1");
+});
+
+test("accepts only versioned state events", () => {
+  assert.equal(isPiPhiWidgetHostEvent({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.event",
+    event: "state",
+    subscriptionId: "state-1",
+    payload: { kind: "status", status: "open" },
+  }), true);
+  assert.equal(isPiPhiWidgetHostEvent({ type: "piphi.widget.event", event: "state" }), false);
 });
 
 test("normalizes settings and layout at the trust boundary", () => {

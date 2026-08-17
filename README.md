@@ -25,6 +25,23 @@ const state = await host.getCapabilityState({ forceRefresh: true });
 await host.ready({ height: 240 });
 ```
 
+Subscribe to an immediate snapshot followed by live telemetry points and connection status changes:
+
+```ts
+const unsubscribeState = await host.subscribeState(
+  { capabilityIds: ["temperature", "humidity"] },
+  (event) => {
+    if (event.kind === "snapshot") renderSnapshot(event.data);
+    if (event.kind === "point") renderPoint(event.data);
+    if (event.kind === "status") showConnectionState(event.status);
+    if (event.kind === "error") showError(event.error?.message);
+  },
+);
+
+// Clean up when the widget unmounts.
+await unsubscribeState();
+```
+
 Subscribe to new bootstrap context when the theme, binding, settings, or host context changes:
 
 ```ts
