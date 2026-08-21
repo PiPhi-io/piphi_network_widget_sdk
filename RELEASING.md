@@ -33,6 +33,7 @@ To retry a partially completed release, rerun the failed workflow. It detects an
 npm ci
 npm run check
 npm test
+npm run widget:conformance
 node scripts/verify-release.mjs "v$(node -p "require('./package.json').version")"
 npm pack --dry-run
 ```

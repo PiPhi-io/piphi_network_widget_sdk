@@ -8,6 +8,7 @@ export type PiPhiWidgetHostMethod =
   | "host.subscribeState"
   | "host.unsubscribeState"
   | "host.getSettings"
+  | "host.translate"
   | "host.listPermissions"
   | "host.navigate"
   | "host.executeCommand"
@@ -62,6 +63,9 @@ export interface PiPhiWidgetHostTheme {
   theme?: "light" | "dark";
   backgroundColor?: string;
   textColor?: string;
+  locale?: string;
+  direction?: "ltr" | "rtl";
+  timeZone?: string;
 }
 
 export interface PiPhiWidgetBootstrap {

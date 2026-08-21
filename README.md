@@ -4,6 +4,26 @@
 
 The SDK provides the versioned host protocol, portable widget and binding types, a typed client, lifecycle subscriptions, device state reads, permission-aware commands, navigation, settings, and responsive height reporting. Device integrations and server runtimes remain in PiPhi's Python Runtime SDK.
 
+## Start a widget
+
+```bash
+npx --package piphi-network-widget-sdk piphi-widget create kitchen-climate --template data
+cd kitchen-climate
+npm install
+npm run dev
+```
+
+The scaffold includes a declarative manifest, settings, English/Spanish/Arabic
+catalogs, RTL-safe reference runtime, light/dark previews, and a contract test.
+The local simulator provides loading/live/stale/offline/reconnecting/denied/error
+fixtures, command success/rejection/timeout behavior, explicit permission
+diagnostics, desktop/tablet/phone resize, light/dark themes, locale/RTL switching,
+dynamic height, reconnect controls, logs, and hot reload. Choose a `data`,
+`control`, `chart`, `camera`, or `multi-device` template. Run
+`piphi-widget conformance` before publishing; `piphi-widget pack` runs the same
+compatibility, WCAG metadata, sandbox/CSP, asset, test, and public-import gate,
+computes entry integrity, and produces the artifact.
+
 ## Install
 
 ```bash
@@ -19,6 +39,7 @@ import { getInjectedPiPhiWidgetHost } from "piphi-network-widget-sdk";
 
 const host = getInjectedPiPhiWidgetHost();
 const context = await host.getContext();
+const title = await host.translate("widget.title");
 const settings = await host.getSettings();
 const state = await host.getCapabilityState({ forceRefresh: true });
 
@@ -96,6 +117,7 @@ The host protocol is versioned independently from the npm package. Package `0.x`
 npm install
 npm run check
 npm test
+npm run widget:conformance
 npm run build
 ```
 

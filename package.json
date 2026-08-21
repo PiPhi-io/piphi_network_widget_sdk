@@ -1,17 +1,23 @@
 {
   "name": "piphi-network-widget-sdk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "TypeScript SDK for building sandboxed PiPhi dashboard widgets.",
   "type": "module",
   "sideEffects": false,
   "files": [
     "dist",
+    "bin",
+    "simulator",
+    "examples",
     "README.md",
     "RELEASING.md"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "piphi-widget": "./bin/piphi-widget.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,13 +30,22 @@
     "./client": {
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js"
+    },
+    "./manifest": {
+      "types": "./dist/manifest.d.ts",
+      "import": "./dist/manifest.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/*.test.mjs",
-    "prepublishOnly": "npm run check && npm test && npm run build"
+    "widget:create": "node bin/piphi-widget.mjs create",
+    "widget:validate": "node bin/piphi-widget.mjs validate",
+    "widget:conformance": "node scripts/verify-reference-widgets.mjs",
+    "widget:dev": "node bin/piphi-widget.mjs dev",
+    "widget:pack": "node bin/piphi-widget.mjs pack",
+    "prepublishOnly": "npm run check && npm test && npm run widget:conformance && npm run build"
   },
   "keywords": [
     "piphi",

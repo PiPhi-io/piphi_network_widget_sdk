@@ -49,6 +49,7 @@ export interface PiPhiWidgetHostApi {
     callback: (event: PiPhiWidgetHostEvent<T>["payload"]) => void,
   ): Promise<() => Promise<void>>;
   getSettings<T extends Record<string, unknown> = Record<string, unknown>>(): Promise<T>;
+  translate(key: string, values?: Record<string, string | number>): Promise<string>;
   listPermissions(): Promise<PiPhiWidgetPermission[]>;
   navigate(params: PiPhiWidgetNavigationParams): Promise<{ ok: boolean }>;
   executeCommand<T = unknown>(params: PiPhiWidgetCommandParams): Promise<T>;
@@ -197,6 +198,7 @@ export function createPiPhiWidgetClient(
       };
     },
     getSettings: () => request("host.getSettings"),
+    translate: (key, values = {}) => request("host.translate", { key, values }),
     listPermissions: () => request("host.listPermissions"),
     navigate: (params) => request("host.navigate", { ...params }),
     executeCommand: (params) => request("host.executeCommand", { ...params }),

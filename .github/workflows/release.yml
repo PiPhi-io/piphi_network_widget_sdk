@@ -22,12 +22,12 @@ jobs:
 
     steps:
       - name: Check out release tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.ref }}
 
       - name: Set up Node.js and npm registry
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
           registry-url: https://registry.npmjs.org
@@ -47,6 +47,12 @@ jobs:
 
       - name: Test and build
         run: npm test
+
+      - name: Verify reference-widget conformance
+        run: npm run widget:conformance
+
+      - name: Verify publish contents
+        run: npm pack --dry-run
 
       - name: Read package identity
         id: package

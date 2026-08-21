@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PiPhi Widget Simulator</title>
+  <style>
+    :root{font:14px/1.45 Inter,system-ui,sans-serif;color:#0f172a;background:#e8edf4}*{box-sizing:border-box}body{margin:0;display:grid;grid-template-columns:320px 1fr;min-height:100vh}aside{background:#fff;border-inline-end:1px solid #cbd5e1;padding:20px;overflow:auto}main{display:grid;place-items:center;padding:32px}.device{width:min(var(--viewport-width,720px),100%);min-height:360px;border:10px solid #0f172a;border-radius:30px;background:white;box-shadow:0 30px 80px #0f172a33;overflow:hidden;transition:width .2s}iframe{border:0;width:100%;min-height:360px;background:transparent}h1{font-size:19px;margin:0 0 4px}h2{font-size:14px;margin:18px 0 6px}p{color:#64748b;margin:0 0 20px}label{display:grid;gap:5px;margin:13px 0;font-weight:650}select,input,button{font:inherit;border:1px solid #cbd5e1;border-radius:9px;padding:8px 10px;background:white}button{cursor:pointer}.row{display:flex;gap:8px}.row>*{flex:1}.status{padding:8px;border-radius:8px;background:#f1f5f9;margin-top:12px;font-size:12px}.diagnostics{display:grid;gap:5px;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-size:12px}.ok{color:#047857}.warn{color:#b45309}pre{white-space:pre-wrap;max-height:180px;overflow:auto;font-size:11px;background:#0f172a;color:#e2e8f0;padding:10px;border-radius:10px}@media(max-width:760px){body{grid-template-columns:1fr}aside{border:0;border-bottom:1px solid #cbd5e1}main{padding:16px}}
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>PiPhi host simulator</h1><p>Live fixtures, permissions, locale, resize, and reconnect.</p>
+    <label>Theme<select id="theme"><option>light</option><option>dark</option></select></label>
+    <label>Locale<select id="locale"><option value="en">English</option><option value="es">Español</option><option value="ar">العربية (RTL)</option></select></label>
+    <label>Viewport<select id="viewport"><option value="720">Desktop · 720px</option><option value="768">Tablet · 768px</option><option value="390">Phone · 390px</option></select></label>
+    <label>Capability value<input id="value" type="number" value="24.2" step="0.1" /></label>
+    <label>Status<select id="status"><option>loading</option><option selected>live</option><option>stale</option><option>offline</option><option>reconnecting</option><option>denied</option><option>error</option></select></label>
+    <label>Command fixture<select id="commandOutcome"><option value="success">Success</option><option value="rejected">Rejected</option><option value="timeout">Timeout</option></select></label>
+    <label><input id="command" type="checkbox" checked /> Grant command permission</label>
+    <div class="row"><button id="reload">Reload widget</button><button id="pulse">Send state</button></div>
+    <div class="row"><button id="disconnect">Go offline</button><button id="reconnect">Reconnect</button></div>
+    <div class="status" id="health">Starting…</div>
+    <h2>Permission diagnostics</h2><div class="diagnostics" id="permissions" role="status"></div>
+    <h2>Host log</h2><pre id="log" aria-live="polite"></pre>
+  </aside>
+  <main><div class="device"><iframe id="widget" title="Widget preview"></iframe></div></main>
+  <script type="module">
+    const $ = (id) => document.getElementById(id);
+    let manifest;
+    const log = (...values) => { $("log").textContent = `${new Date().toLocaleTimeString()} ${values.map(v=>typeof v==='string'?v:JSON.stringify(v)).join(' ')}\n${$("log").textContent}`.slice(0,8000); };
+    const context = () => ({
+      integrationId:"simulator", packageId:manifest?.id, instanceId:"local-preview", widgetTitle:manifest?.name,
+      theme:$("theme").value, localization:{locale:$("locale").value,direction:$("locale").value==="ar"?"rtl":"ltr",timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
+      binding:{integrationId:"simulator",configId:"fixture",deviceId:"device-1",capabilityId:"temperature",mode:"read-write",valueKind:"numeric",unit:"°C",deviceLabel:"Living room",capabilityLabel:"Temperature"},
+      settings:Object.fromEntries((manifest?.settings||[]).map(item=>[item.id,item.default])), permissions:$("command").checked?["host.executeCommand"]:[],
+    });
+    const catalog = (key) => manifest?.translations?.[$("locale").value]?.[key] ?? manifest?.translations?.en?.[key] ?? key;
+    function statePayload(){ const status=$("status").value; if(status==="denied")return {kind:"error",status,error:{code:"PERMISSION_DENIED",message:"Simulator denied this state request."}}; if(status==="error")return {kind:"error",status,error:{code:"FIXTURE_ERROR",message:"Simulated connector error."}}; return {kind:"snapshot",status,data:{primaryState:Number($("value").value),value:Number($("value").value),status,unit:"°C"}}; }
+    function updateDiagnostics(){const command=$("command").checked;$("permissions").innerHTML=`<span class="ok">✓ State subscription granted</span><span class="${command?'ok':'warn'}">${command?'✓':'!'} host.executeCommand ${command?'granted':'denied'}</span><span class="ok">✓ Sandboxed preview origin</span>`;}
+    function buildHost(win){
+      const listeners=new Set();
+      const host={
+        getBootstrap:()=>({protocol:"piphi.widget.host",version:"1",type:"piphi.widget.bootstrap",instanceId:"local-preview",settings:context().settings,binding:context().binding,layout:manifest.layout||{},host:{theme:context().theme,...context().localization}}),
+        subscribe:(callback)=>{listeners.add(callback);callback(host.getBootstrap());return()=>listeners.delete(callback)},request:async()=>({}),
+        getContext:async()=>context(),getBinding:async()=>({binding:context().binding,source:context().binding}),getSettings:async()=>context().settings,listPermissions:async()=>context().permissions,
+        translate:async(key)=>catalog(key),getCapabilityState:async()=>statePayload(),
+        subscribeState:async(_params,callback)=>{callback(statePayload());win.__piphiStateCallback=callback;return async()=>{win.__piphiStateCallback=null}},
+        navigate:async(params)=>{log("navigate",params);return{ok:true}},executeCommand:async(params)=>{if(!$("command").checked)throw new Error("Permission denied");const outcome=$("commandOutcome").value;log("command",outcome,params);if(outcome==="rejected")throw new Error("Fixture rejected the command");if(outcome==="timeout")return await new Promise((_resolve,reject)=>setTimeout(()=>reject(new Error("Fixture command timeout")),1500));return{ok:true}},
+        setHeight:async(height)=>{const value=Math.max(120,Math.min(1200,Number(height)||180));$("widget").style.height=value+"px";log("height",value);return{ok:true,height:value}},
+        ready:async(options={})=>{if(options.height)await host.setHeight(options.height);$("health").textContent="Ready · protocol v1";log("ready");return{ok:true,height:Number(options.height)||180}},
+      }; return host;
+    }
+    async function load(){
+      manifest=await fetch("/widget.manifest.json",{cache:"no-store"}).then(r=>r.json());
+      const entry=new URL(manifest.entry,location.href).pathname;
+      const iframe=$("widget");
+      iframe.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>html,body,#piphi-widget-root{margin:0;min-height:100%;font-family:system-ui}body{background:transparent}</style></head><body><div id="piphi-widget-root"></div><script type="module">window.PiPhiWidgetHost=parent.__createPiPhiHost(window);document.documentElement.lang=parent.document.documentElement.lang;document.documentElement.dir=parent.document.documentElement.dir;import(${JSON.stringify(entry)}).catch(error=>parent.__piphiLog('runtime error',error.message));<\/script></body></html>`;
+      $("health").textContent=`Loading ${manifest.name}…`;
+    }
+    window.__createPiPhiHost=buildHost; window.__piphiLog=log;
+    for(const id of ["theme","locale","command"]){$(id).addEventListener("change",()=>{document.documentElement.lang=$("locale").value;document.documentElement.dir=$("locale").value==="ar"?"rtl":"ltr";updateDiagnostics();load()})}
+    $("status").addEventListener("change",()=>$("pulse").click());
+    $("viewport").addEventListener("change",()=>{document.documentElement.style.setProperty("--viewport-width",`${$("viewport").value}px`);window.dispatchEvent(new Event("resize"));log("resize",$("viewport").value)});
+    $("reload").onclick=load; $("pulse").onclick=()=>{$("widget").contentWindow?.__piphiStateCallback?.(statePayload());log("state",statePayload())};
+    $("disconnect").onclick=()=>{$("status").value="offline";$("pulse").click();$("health").textContent="Offline · fixture disconnected"};
+    $("reconnect").onclick=()=>{$("status").value="reconnecting";$("pulse").click();$("health").textContent="Reconnecting…";setTimeout(()=>{$("status").value="live";$("pulse").click();$("health").textContent="Ready · reconnected"},700)};
+    new EventSource("/__piphi__/events").addEventListener("reload",()=>load());
+    updateDiagnostics();load().catch(error=>{$("health").textContent=error.message;log("startup error",error.message)});
+  </script>
+</body>
+</html>
