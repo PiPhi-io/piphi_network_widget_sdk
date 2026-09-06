@@ -25,7 +25,7 @@ function parseCreateArgs(values) {
 function templateContract(template) {
   if (template === "control") return { binding_modes: ["read-write"], value_kinds: ["boolean", "command"], permissions: ["host.executeCommand"], allowed_commands: ["set", "toggle"], capability_requirements: ["on_off"] };
   if (template === "chart") return { binding_modes: ["read"], value_kinds: ["numeric"], permissions: [], capability_requirements: ["history"] };
-  if (template === "camera") return { binding_modes: ["read"], value_kinds: ["json"], permissions: ["host.camera.read"], capability_requirements: ["camera_snapshot"] };
+  if (template === "camera") return { binding_modes: ["read"], value_kinds: ["json"], permissions: ["camera"], capability_requirements: ["camera_snapshot"] };
   if (template === "multi-device") return { binding_modes: ["read-write"], value_kinds: ["numeric", "boolean", "enum", "command"], permissions: ["host.executeCommand"], allowed_commands: ["set", "toggle"], capability_requirements: ["multi_device"] };
   return { binding_modes: ["read"], value_kinds: ["numeric", "text", "boolean", "enum"], permissions: [], capability_requirements: [] };
 }
