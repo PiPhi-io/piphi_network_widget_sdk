@@ -13,8 +13,10 @@ export interface PiPhiWidgetSettingDefinition {
 export interface PiPhiWidgetManifest {
   id: string;
   name: string;
+  description?: string;
   version: string;
   entry: string;
+  artifact?: { release_asset: string; integrity?: string | null };
   integrity?: string;
   styles?: string[];
   style_integrities?: Record<string, string>;
@@ -43,6 +45,7 @@ export interface PiPhiWidgetManifest {
   };
   previews?: { light?: string; dark?: string };
   translations?: Record<string, Record<string, string>>;
+  marketplace?: Record<string, unknown>;
   security: {
     permissions?: string[];
     allowed_commands?: string[];
@@ -65,6 +68,7 @@ const BINDING_MODES = new Set(["read", "write", "read-write"]);
 const VALUE_KINDS = new Set(["numeric", "text", "boolean", "enum", "json", "command"]);
 const SAFE_SANDBOX_TOKENS = new Set(["allow-scripts"]);
 const REQUIRED_STATES = ["loading", "live", "stale", "offline", "reconnecting", "denied", "error"];
+const ARCHIVE_INTEGRITY = /^sha256:[a-f0-9]{64}$/;
 
 function isSafeAssetPath(value: unknown): boolean {
   if (typeof value !== "string" || !value.trim()) return false;
@@ -85,6 +89,12 @@ export function validateWidgetManifest(value: unknown): PiPhiWidgetManifestDiagn
   if (!SEMVER.test(String(manifest.version ?? ""))) error("version", "invalid_version", "Use semantic versioning, for example 1.0.0.");
   if (!String(manifest.entry ?? "").trim()) error("entry", "missing_entry", "An entry asset is required.");
   else if (!isSafeAssetPath(manifest.entry)) error("entry", "unsafe_asset_path", "Entry must be a package-relative path without traversal or a URL.");
+  if (manifest.artifact !== undefined) {
+    const artifact = manifest.artifact && typeof manifest.artifact === "object" && !Array.isArray(manifest.artifact)
+      ? manifest.artifact as Record<string, unknown> : {};
+    if (!isSafeAssetPath(artifact.release_asset)) error("artifact.release_asset", "unsafe_release_asset", "Release asset must be a safe package-relative filename.");
+    if (artifact.integrity != null && !ARCHIVE_INTEGRITY.test(String(artifact.integrity))) error("artifact.integrity", "invalid_archive_integrity", "Archive integrity must use sha256:<64 lowercase hex characters>.");
+  }
   if (!Array.isArray(manifest.binding_modes) || manifest.binding_modes.length === 0) error("binding_modes", "missing_binding_modes", "Declare at least one binding mode.");
   else manifest.binding_modes.forEach((mode, index) => { if (!BINDING_MODES.has(String(mode))) error(`binding_modes.${index}`, "invalid_binding_mode", "Use read, write, or read-write."); });
   if (!Array.isArray(manifest.value_kinds) || manifest.value_kinds.length === 0) error("value_kinds", "missing_value_kinds", "Declare at least one value kind.");

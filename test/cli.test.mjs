@@ -17,6 +17,7 @@ for (const template of ["data", "control", "chart", "camera", "multi-device"]) t
     assert.equal(manifest.conformance.accessibility, "wcag2.2-aa");
     assert.ok(manifest.conformance.states.includes("reconnecting"));
     if (["control", "multi-device"].includes(template)) assert.ok(manifest.security.allowed_commands.includes("toggle"));
+    if (template === "camera") assert.deepEqual(manifest.security.permissions, ["camera"]);
     const checked = spawnSync(process.execPath, [resolve("bin/piphi-widget.mjs"), "validate", resolve(project, "widget.manifest.json")], { cwd: project, encoding: "utf8" });
     assert.equal(checked.status, 0, checked.stderr || checked.stdout);
     await import("node:fs/promises").then(({ mkdir, copyFile }) => mkdir(resolve(project, "dist"), { recursive: true }).then(() => copyFile(resolve(project, "src/widget.js"), resolve(project, "dist/widget.js"))));

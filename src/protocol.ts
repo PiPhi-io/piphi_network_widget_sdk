@@ -12,6 +12,8 @@ export type PiPhiWidgetHostMethod =
   | "host.listPermissions"
   | "host.navigate"
   | "host.executeCommand"
+  | "host.openCameraSession"
+  | "host.closeCameraSession"
   | "host.setHeight"
   | "host.ready";
 
@@ -20,6 +22,7 @@ export type PiPhiWidgetPermission =
   | "host.executeCommand"
   | "navigate"
   | "command"
+  | "camera"
   | (string & {});
 
 export interface PiPhiWidgetBinding {

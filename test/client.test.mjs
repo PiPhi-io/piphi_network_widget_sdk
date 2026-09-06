@@ -109,6 +109,39 @@ test("publishes compatible bootstrap updates to subscribers", () => {
   client.destroy();
 });
 
+test("brokers camera sessions without accepting camera targets or credentials", async () => {
+  const harness = createWindowHarness();
+  const client = createPiPhiWidgetClient({ window: harness.window });
+  const sessionPromise = client.openCameraSession({ type: "offer", sdp: "v=0", includeAudio: false });
+  const openRequest = harness.requests[0].payload;
+  assert.equal(openRequest.method, "host.openCameraSession");
+  assert.deepEqual(openRequest.params, { type: "offer", sdp: "v=0", includeAudio: false });
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: openRequest.requestId,
+    success: true,
+    result: { sdp: "answer", sessionId: "camera-1" },
+  });
+  assert.deepEqual(await sessionPromise, { sdp: "answer", sessionId: "camera-1" });
+
+  const closePromise = client.closeCameraSession("camera-1");
+  const closeRequest = harness.requests[1].payload;
+  assert.equal(closeRequest.method, "host.closeCameraSession");
+  assert.deepEqual(closeRequest.params, { sessionId: "camera-1" });
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: closeRequest.requestId,
+    success: true,
+    result: { ok: true },
+  });
+  assert.deepEqual(await closePromise, { ok: true });
+  client.destroy();
+});
+
 test("reports a clear error outside the PiPhi widget host", () => {
   assert.throws(
     () => getInjectedPiPhiWidgetHost(),

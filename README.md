@@ -81,11 +81,21 @@ await host.executeCommand({
   args: { brightness: 80 },
 });
 
+const cameraSession = await host.openCameraSession({
+  type: "offer",
+  sdp: browserOffer.sdp,
+  includeAudio: false,
+});
+await peerConnection.setRemoteDescription({ type: "answer", sdp: cameraSession.sdp });
+await host.closeCameraSession(cameraSession.sessionId);
+
 await host.navigate({ path: "/dashboards", newTab: false });
 ```
 
 - `host.executeCommand` requires `host.executeCommand`.
 - `host.navigate` requires `host.navigate`.
+- `host.openCameraSession` and `host.closeCameraSession` require `camera` and
+  are scoped entirely to the saved camera binding.
 - Context, settings, binding, and state reads do not require an extra host permission.
 - Browser capabilities such as camera and microphone are separately controlled by the iframe policy.
 
