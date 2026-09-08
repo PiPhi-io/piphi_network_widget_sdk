@@ -1,3 +1,4 @@
 export * from "./client.js";
 export * from "./protocol.js";
 export * from "./manifest.js";
+export * from "./declarative.js";

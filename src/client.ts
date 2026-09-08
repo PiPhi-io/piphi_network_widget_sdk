@@ -5,6 +5,7 @@ import {
   isPiPhiWidgetHostResponse,
   isPiPhiWidgetHostEvent,
   type PiPhiWidgetBinding,
+  type PiPhiWidgetBindingSlot,
   type PiPhiWidgetBootstrap,
   type PiPhiWidgetHostMethod,
   type PiPhiWidgetHostRequest,
@@ -13,6 +14,7 @@ import {
 } from "./protocol.js";
 
 export interface PiPhiWidgetCapabilityStateParams {
+  slotId?: string;
   configId?: string;
   capabilityId?: string;
   capabilityIds?: string[];
@@ -27,6 +29,7 @@ export interface PiPhiWidgetNavigationParams {
 }
 
 export interface PiPhiWidgetCommandParams {
+  slotId?: string;
   commandName?: string;
   commandId?: string;
   capabilityId?: string;
@@ -35,6 +38,7 @@ export interface PiPhiWidgetCommandParams {
 }
 
 export interface PiPhiWidgetCameraOfferParams {
+  slotId?: string;
   sdp: string;
   type: "offer";
   includeAudio?: boolean;
@@ -55,6 +59,7 @@ export interface PiPhiWidgetHostApi {
   ): Promise<T>;
   getContext<T extends Record<string, unknown> = Record<string, unknown>>(): Promise<T>;
   getBinding(): Promise<{ binding: PiPhiWidgetBinding | null; source?: Record<string, unknown> }>;
+  getBindings(): Promise<{ bindings: PiPhiWidgetBindingSlot[] }>;
   getCapabilityState<T = unknown>(params?: PiPhiWidgetCapabilityStateParams): Promise<T>;
   subscribeState<T = unknown>(
     params: PiPhiWidgetCapabilityStateParams,
@@ -200,6 +205,7 @@ export function createPiPhiWidgetClient(
     request,
     getContext: () => request("host.getContext"),
     getBinding: () => request("host.getBinding"),
+    getBindings: () => request("host.getBindings"),
     getCapabilityState: (params = {}) => request("host.getCapabilityState", { ...params }),
     async subscribeState(params, callback) {
       const result = await request<{ subscriptionId: string }>("host.subscribeState", { ...params });

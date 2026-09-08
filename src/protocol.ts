@@ -4,6 +4,7 @@ export const PIPHI_WIDGET_HOST_VERSION = "1" as const;
 export type PiPhiWidgetHostMethod =
   | "host.getContext"
   | "host.getBinding"
+  | "host.getBindings"
   | "host.getCapabilityState"
   | "host.subscribeState"
   | "host.unsubscribeState"
@@ -39,6 +40,14 @@ export interface PiPhiWidgetBinding {
   deviceLabel?: string;
   capabilityLabel?: string;
   [key: string]: unknown;
+}
+
+export interface PiPhiWidgetBindingSlot {
+  id: string;
+  label: string;
+  role: string;
+  required?: boolean;
+  binding: PiPhiWidgetBinding;
 }
 
 export interface PiPhiWidgetLayoutContract {
@@ -78,6 +87,7 @@ export interface PiPhiWidgetBootstrap {
   instanceId: string;
   settings: Record<string, unknown>;
   binding: PiPhiWidgetBinding | null;
+  bindings?: PiPhiWidgetBindingSlot[];
   layout: Required<PiPhiWidgetLayoutContract>;
   package?: PiPhiWidgetPackageContext;
   host?: PiPhiWidgetHostTheme;

@@ -109,6 +109,37 @@ test("publishes compatible bootstrap updates to subscribers", () => {
   client.destroy();
 });
 
+test("requests named bindings and scopes state to a slot", async () => {
+  const harness = createWindowHarness();
+  const client = createPiPhiWidgetClient({ window: harness.window });
+  const bindingsPromise = client.getBindings();
+  const bindingsRequest = harness.requests[0].payload;
+  assert.equal(bindingsRequest.method, "host.getBindings");
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: bindingsRequest.requestId,
+    success: true,
+    result: { bindings: [{ id: "solar:1", role: "solar", label: "Solar", binding: { configId: "cfg-solar" } }] },
+  });
+  assert.equal((await bindingsPromise).bindings[0].role, "solar");
+
+  const statePromise = client.getCapabilityState({ slotId: "solar:1", capabilityId: "production" });
+  const stateRequest = harness.requests[1].payload;
+  assert.deepEqual(stateRequest.params, { slotId: "solar:1", capabilityId: "production" });
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: stateRequest.requestId,
+    success: true,
+    result: { value: 4200 },
+  });
+  assert.deepEqual(await statePromise, { value: 4200 });
+  client.destroy();
+});
+
 test("brokers camera sessions without accepting camera targets or credentials", async () => {
   const harness = createWindowHarness();
   const client = createPiPhiWidgetClient({ window: harness.window });

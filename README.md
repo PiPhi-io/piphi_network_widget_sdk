@@ -24,6 +24,12 @@ dynamic height, reconnect controls, logs, and hot reload. Choose a `data`,
 compatibility, WCAG metadata, sandbox/CSP, asset, test, and public-import gate,
 computes entry integrity, and produces the artifact.
 
+For installed widgets that only need native text, metric, status, and progress
+views, import `validateDeclarativeWidgetRecipe` from
+`piphi-network-widget-sdk/declarative`. Core renders these versioned recipes
+without widget JavaScript, HTML, CSS, URLs, or runtime permissions. Use the
+sandboxed bundle runtime for custom interaction, media, or command controls.
+
 ## Install
 
 ```bash
@@ -42,6 +48,14 @@ const context = await host.getContext();
 const title = await host.translate("widget.title");
 const settings = await host.getSettings();
 const state = await host.getCapabilityState({ forceRefresh: true });
+
+// Package-native widgets can discover every named source and scope host calls
+// to one saved slot. Use the returned instance ID for repeated slots.
+const { bindings } = await host.getBindings();
+const solar = bindings.find((slot) => slot.role === "solar");
+const solarState = solar
+  ? await host.getCapabilityState({ slotId: solar.id })
+  : null;
 
 await host.ready({ height: 240 });
 ```

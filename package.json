@@ -1,7 +1,7 @@
 {
   "name": "piphi-network-widget-sdk",
-  "version": "0.4.0",
-  "description": "TypeScript SDK for building sandboxed PiPhi dashboard widgets.",
+  "version": "0.5.0",
+  "description": "TypeScript SDK for building declarative and sandboxed PiPhi dashboard widgets.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -34,6 +34,10 @@
     "./manifest": {
       "types": "./dist/manifest.d.ts",
       "import": "./dist/manifest.js"
+    },
+    "./declarative": {
+      "types": "./dist/declarative.d.ts",
+      "import": "./dist/declarative.js"
     }
   },
   "scripts": {

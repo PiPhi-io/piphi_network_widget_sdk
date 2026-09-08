@@ -43,7 +43,7 @@
       const host={
         getBootstrap:()=>({protocol:"piphi.widget.host",version:"1",type:"piphi.widget.bootstrap",instanceId:"local-preview",settings:context().settings,binding:context().binding,layout:manifest.layout||{},host:{theme:context().theme,...context().localization}}),
         subscribe:(callback)=>{listeners.add(callback);callback(host.getBootstrap());return()=>listeners.delete(callback)},request:async()=>({}),
-        getContext:async()=>context(),getBinding:async()=>({binding:context().binding,source:context().binding}),getSettings:async()=>context().settings,listPermissions:async()=>context().permissions,
+        getContext:async()=>context(),getBinding:async()=>({binding:context().binding,source:context().binding}),getBindings:async()=>({bindings:context().bindings||[]}),getSettings:async()=>context().settings,listPermissions:async()=>context().permissions,
         translate:async(key)=>catalog(key),getCapabilityState:async()=>statePayload(),
         subscribeState:async(_params,callback)=>{callback(statePayload());win.__piphiStateCallback=callback;return async()=>{win.__piphiStateCallback=null}},
         navigate:async(params)=>{log("navigate",params);return{ok:true}},executeCommand:async(params)=>{if(!$("command").checked)throw new Error("Permission denied");const outcome=$("commandOutcome").value;log("command",outcome,params);if(outcome==="rejected")throw new Error("Fixture rejected the command");if(outcome==="timeout")return await new Promise((_resolve,reject)=>setTimeout(()=>reject(new Error("Fixture command timeout")),1500));return{ok:true}},
