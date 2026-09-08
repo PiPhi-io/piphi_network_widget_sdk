@@ -49,6 +49,8 @@
     "widget:conformance": "node scripts/verify-reference-widgets.mjs",
     "widget:dev": "node bin/piphi-widget.mjs dev",
     "widget:pack": "node bin/piphi-widget.mjs pack",
+    "pilots:build": "node scripts/build-pilot-packages.mjs",
+    "pilots:check": "node scripts/build-pilot-packages.mjs --check",
     "prepublishOnly": "npm run check && npm test && npm run widget:conformance && npm run build"
   },
   "keywords": [
@@ -75,6 +77,7 @@
   "license": "MIT",
   "author": "PiPhi Network",
   "devDependencies": {
+    "fflate": "0.8.3",
     "typescript": "~5.8.3"
   }
 }
