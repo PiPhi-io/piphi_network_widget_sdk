@@ -137,7 +137,12 @@ async function conformance(pathArg, quiet = false) {
   const result = await validate(pathArg, true);
   const diagnostics = [...result.diagnostics];
   const add = (path, code, message) => diagnostics.push({ path, code, severity: "error", message });
-  const assets = [result.value.entry, ...(result.value.styles || []), ...Object.values(result.value.previews || {})].filter(Boolean);
+  const assets = [
+    result.value.entry,
+    ...(result.value.styles || []),
+    ...(result.value.themes || []).map((theme) => theme?.stylesheet),
+    ...Object.values(result.value.previews || {}),
+  ].filter(Boolean);
   for (const asset of assets) {
     const target = resolve(cwd, asset);
     if (!target.startsWith(cwd + sep) || !existsSync(target)) add(String(asset), "missing_asset", "Declared package asset does not exist.");

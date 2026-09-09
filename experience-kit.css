@@ -1,0 +1,140 @@
+:root {
+  --piphi-widget-accent: #2563eb;
+  --piphi-widget-positive: #059669;
+  --piphi-widget-warning: #d97706;
+  --piphi-widget-danger: #dc2626;
+  --piphi-widget-surface: color-mix(in srgb, currentColor 6%, transparent);
+  --piphi-widget-surface-muted: color-mix(in srgb, currentColor 4%, transparent);
+  --piphi-widget-text: currentColor;
+  --piphi-widget-text-muted: color-mix(in srgb, currentColor 68%, transparent);
+  --piphi-widget-surface-strong: color-mix(in srgb, currentColor 10%, transparent);
+  --piphi-widget-border: color-mix(in srgb, currentColor 14%, transparent);
+  --piphi-widget-radius: 12px;
+  --piphi-widget-control-radius: 10px;
+  --piphi-widget-gap: 0.65rem;
+  --piphi-domain-accent: var(--piphi-widget-accent);
+  color-scheme: light dark;
+  color: var(--piphi-widget-text);
+}
+
+.piphi-stack,
+.piphi-group,
+.piphi-grid {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--piphi-widget-gap);
+}
+
+.piphi-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--piphi-columns, 2), minmax(0, 1fr));
+}
+
+.piphi-group {
+  padding: 0.75rem;
+  border: 1px solid var(--piphi-widget-border);
+  border-radius: calc(var(--piphi-widget-radius) + 0.1rem);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.piphi-reading,
+.piphi-control {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.7rem;
+  border: 1px solid transparent;
+  border-radius: var(--piphi-widget-radius);
+  background: var(--piphi-widget-surface);
+  color: inherit;
+}
+
+.piphi-reading[data-emphasis="hero"] {
+  min-height: 5rem;
+  background: color-mix(in srgb, var(--piphi-domain-accent) 12%, transparent);
+}
+
+.piphi-reading[data-emphasis="compact"] {
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.piphi-label {
+  color: var(--piphi-widget-text-muted);
+  font-size: 0.72rem;
+}
+
+.piphi-value {
+  overflow-wrap: anywhere;
+  font-size: 1.1rem;
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.piphi-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.piphi-status::before {
+  width: 0.62rem;
+  height: 0.62rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 24%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 6%, transparent);
+  content: "";
+}
+
+.piphi-status[data-active="true"]::before {
+  background: var(--piphi-domain-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--piphi-domain-accent) 17%, transparent);
+}
+
+[data-piphi-domain="temperature"] { --piphi-domain-accent: #f97316; }
+[data-piphi-domain="humidity"] { --piphi-domain-accent: #0ea5e9; }
+[data-piphi-domain="air_quality"] { --piphi-domain-accent: #10b981; }
+[data-piphi-domain="energy"],
+[data-piphi-domain="power"] { --piphi-domain-accent: #eab308; }
+[data-piphi-domain="battery"] { --piphi-domain-accent: #22c55e; }
+[data-piphi-domain="light"] { --piphi-domain-accent: #f59e0b; }
+[data-piphi-domain="switch"] { --piphi-domain-accent: #06b6d4; }
+[data-piphi-domain="lock"] { --piphi-domain-accent: #8b5cf6; }
+[data-piphi-domain="door"],
+[data-piphi-domain="motion"] { --piphi-domain-accent: #ec4899; }
+[data-piphi-domain="connectivity"] { --piphi-domain-accent: #14b8a6; }
+
+.piphi-control {
+  min-height: 2.75rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-color: var(--piphi-widget-border);
+  border-radius: var(--piphi-widget-control-radius);
+  font: inherit;
+}
+
+.piphi-control:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--piphi-domain-accent) 32%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .piphi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piphi-control,
+  .piphi-reading {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

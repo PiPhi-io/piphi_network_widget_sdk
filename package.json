@@ -1,11 +1,12 @@
 {
   "name": "piphi-network-widget-sdk",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "TypeScript SDK for building declarative and sandboxed PiPhi dashboard widgets.",
   "type": "module",
   "sideEffects": false,
   "files": [
     "dist",
+    "experience-kit.css",
     "bin",
     "simulator",
     "examples",
@@ -38,7 +39,8 @@
     "./declarative": {
       "types": "./dist/declarative.d.ts",
       "import": "./dist/declarative.js"
-    }
+    },
+    "./experience-kit.css": "./experience-kit.css"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

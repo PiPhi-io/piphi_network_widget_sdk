@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -43,6 +43,33 @@ test("conformance rejects private Core imports and host-unsafe browser APIs", as
     const output = `${checked.stdout}\n${checked.stderr}`;
     assert.match(output, /private_core_import/);
     assert.match(output, /cookie_access/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("conformance requires every declared package theme asset", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "piphi-widget-sdk-theme-"));
+  try {
+    const created = spawnSync(process.execPath, [resolve("bin/piphi-widget.mjs"), "create", "Themed Widget"], { cwd: directory, encoding: "utf8" });
+    assert.equal(created.status, 0, created.stderr);
+    const project = resolve(directory, "themed-widget");
+    const manifestPath = resolve(project, "widget.manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.themes = [{ id: "calm", name: "Calm", stylesheet: "themes/calm.css" }];
+    manifest.default_theme_id = "calm";
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    await mkdir(resolve(project, "dist"), { recursive: true });
+    await copyFile(resolve(project, "src/widget.js"), resolve(project, "dist/widget.js"));
+
+    const missing = spawnSync(process.execPath, [resolve("bin/piphi-widget.mjs"), "conformance"], { cwd: project, encoding: "utf8" });
+    assert.notEqual(missing.status, 0);
+    assert.match(`${missing.stdout}\n${missing.stderr}`, /missing_asset/);
+
+    await mkdir(resolve(project, "themes"), { recursive: true });
+    await writeFile(resolve(project, "themes/calm.css"), ":root{--piphi-widget-accent:#0ea5e9}\n");
+    const complete = spawnSync(process.execPath, [resolve("bin/piphi-widget.mjs"), "conformance"], { cwd: project, encoding: "utf8" });
+    assert.equal(complete.status, 0, complete.stderr || complete.stdout);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

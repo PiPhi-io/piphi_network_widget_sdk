@@ -51,6 +51,10 @@ function normalized(source) {
       slot.value_kinds ??= [];
       slot.capability_requirements ??= [];
       slot.compatible_integration_ids ??= [];
+      slot.data_delivery ??= {
+        mode: "stream_preferred",
+        stale_after_seconds: null,
+      };
     }
     if (widget.recipe) {
       widget.recipe.schema_version ??= "1";
