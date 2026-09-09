@@ -10,6 +10,14 @@ export interface PiPhiWidgetSettingDefinition {
   options?: Array<{ label: string; value: unknown }>;
 }
 
+export interface PiPhiWidgetThemeDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  stylesheet: string;
+  color_scheme?: "auto" | "light" | "dark";
+}
+
 export interface PiPhiWidgetManifest {
   id: string;
   name: string;
@@ -20,6 +28,8 @@ export interface PiPhiWidgetManifest {
   integrity?: string;
   styles?: string[];
   style_integrities?: Record<string, string>;
+  themes?: PiPhiWidgetThemeDefinition[];
+  default_theme_id?: string;
   framework?: string;
   binding_modes: Array<"read" | "write" | "read-write">;
   value_kinds: Array<"numeric" | "text" | "boolean" | "enum" | "json" | "command">;
@@ -63,6 +73,7 @@ export interface PiPhiWidgetManifestDiagnostic {
 
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const ID = /^[a-z0-9]+(?:[._-][a-z0-9]+)+$/;
+const LOCAL_ID = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 const SETTING_TYPES = new Set(["text", "number", "boolean", "select", "device", "devices"]);
 const BINDING_MODES = new Set(["read", "write", "read-write"]);
 const VALUE_KINDS = new Set(["numeric", "text", "boolean", "enum", "json", "command"]);
@@ -102,6 +113,25 @@ export function validateWidgetManifest(value: unknown): PiPhiWidgetManifestDiagn
   if (!manifest.security || typeof manifest.security !== "object") error("security", "missing_security", "A security policy is required.");
   const styles = Array.isArray(manifest.styles) ? manifest.styles : [];
   styles.forEach((path, index) => { if (!isSafeAssetPath(path)) error(`styles.${index}`, "unsafe_asset_path", "Style assets must be package-relative paths."); });
+  const themes = Array.isArray(manifest.themes) ? manifest.themes : [];
+  if (themes.length > 8) error("themes", "too_many_themes", "Declare no more than eight package themes.");
+  const themeIds = new Set<string>();
+  const themeStylesheets = new Set<string>();
+  themes.forEach((candidate, index) => {
+    const theme = candidate && typeof candidate === "object" && !Array.isArray(candidate)
+      ? candidate as Record<string, unknown> : {};
+    const id = String(theme.id ?? "").trim();
+    const stylesheet = String(theme.stylesheet ?? "").trim();
+    if (!LOCAL_ID.test(id)) error(`themes.${index}.id`, "invalid_theme_id", "Use a lowercase theme id.");
+    if (themeIds.has(id)) error(`themes.${index}.id`, "duplicate_theme_id", `Theme '${id}' is duplicated.`);
+    themeIds.add(id);
+    if (!String(theme.name ?? "").trim()) error(`themes.${index}.name`, "missing_theme_name", "Each theme needs a user-facing name.");
+    if (!isSafeAssetPath(stylesheet) || !stylesheet.toLowerCase().endsWith(".css")) error(`themes.${index}.stylesheet`, "unsafe_theme_stylesheet", "Theme stylesheets must be package-relative CSS assets.");
+    if (themeStylesheets.has(stylesheet)) error(`themes.${index}.stylesheet`, "duplicate_theme_stylesheet", "Each theme must use its own stylesheet.");
+    themeStylesheets.add(stylesheet);
+    if (theme.color_scheme !== undefined && !["auto", "light", "dark"].includes(String(theme.color_scheme))) error(`themes.${index}.color_scheme`, "invalid_theme_color_scheme", "Use auto, light, or dark.");
+  });
+  if (manifest.default_theme_id !== undefined && !themeIds.has(String(manifest.default_theme_id))) error("default_theme_id", "unknown_default_theme", "Default theme must reference a declared theme.");
   const settings = Array.isArray(manifest.settings) ? manifest.settings : [];
   const settingIds = new Set<string>();
   settings.forEach((candidate, index) => {

@@ -48,6 +48,17 @@ export interface PiPhiWidgetBindingSlot {
   role: string;
   required?: boolean;
   binding: PiPhiWidgetBinding;
+  dataDelivery?: PiPhiWidgetDataDeliveryRequirement;
+}
+
+export type PiPhiWidgetDataDeliveryMode =
+  | "snapshot"
+  | "stream_preferred"
+  | "stream_required";
+
+export interface PiPhiWidgetDataDeliveryRequirement {
+  mode: PiPhiWidgetDataDeliveryMode;
+  staleAfterSeconds?: number;
 }
 
 export interface PiPhiWidgetLayoutContract {
@@ -69,6 +80,26 @@ export interface PiPhiWidgetPackageContext {
   bindingModes?: string[];
   valueKinds?: string[];
   capabilityRequirements?: string[];
+  themeId?: string;
+}
+
+export interface PiPhiWidgetExperienceTheme {
+  id: string;
+  name: string;
+  colorScheme: "auto" | "light" | "dark";
+}
+
+export interface PiPhiWidgetDesignTokens {
+  accent: string;
+  positive: string;
+  warning: string;
+  danger: string;
+  surface: string;
+  surfaceMuted: string;
+  text: string;
+  textMuted: string;
+  radius: string;
+  controlRadius: string;
 }
 
 export interface PiPhiWidgetHostTheme {
@@ -78,6 +109,8 @@ export interface PiPhiWidgetHostTheme {
   locale?: string;
   direction?: "ltr" | "rtl";
   timeZone?: string;
+  experienceTheme?: PiPhiWidgetExperienceTheme;
+  tokens?: PiPhiWidgetDesignTokens;
 }
 
 export interface PiPhiWidgetBootstrap {

@@ -37,3 +37,27 @@ test("rejects unsafe or incomplete author contracts", () => {
   assert.ok(diagnostics.some((item) => item.code === "unsafe_sandbox_token"));
   assert.ok(diagnostics.some((item) => item.code === "unsafe_csp_source"));
 });
+
+test("validates bounded package themes and their default", () => {
+  const themed = {
+    ...valid,
+    themes: [
+      { id: "calm", name: "Calm", stylesheet: "themes/calm.css", color_scheme: "light" },
+      { id: "night", name: "Night", stylesheet: "themes/night.css", color_scheme: "dark" },
+    ],
+    default_theme_id: "calm",
+  };
+  assert.deepEqual(validateWidgetManifest(themed), []);
+
+  const diagnostics = validateWidgetManifest({
+    ...valid,
+    themes: [
+      { id: "same", name: "One", stylesheet: "../theme.css" },
+      { id: "same", name: "Two", stylesheet: "theme.js" },
+    ],
+    default_theme_id: "missing",
+  });
+  assert.ok(diagnostics.some((item) => item.code === "duplicate_theme_id"));
+  assert.ok(diagnostics.some((item) => item.code === "unsafe_theme_stylesheet"));
+  assert.ok(diagnostics.some((item) => item.code === "unknown_default_theme"));
+});
