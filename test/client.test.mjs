@@ -140,6 +140,25 @@ test("requests named bindings and scopes state to a slot", async () => {
   client.destroy();
 });
 
+test("activates a declared semantic target through the trusted host", async () => {
+  const harness = createWindowHarness();
+  const client = createPiPhiWidgetClient({ window: harness.window });
+  const activation = client.activateInteraction("temperature", { path: "/history" });
+  const request = harness.requests[0].payload;
+  assert.equal(request.method, "host.activateInteraction");
+  assert.deepEqual(request.params, { targetId: "temperature", path: "/history" });
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: request.requestId,
+    success: true,
+    result: { ok: true, action: "history", targetId: "temperature" },
+  });
+  assert.deepEqual(await activation, { ok: true, action: "history", targetId: "temperature" });
+  client.destroy();
+});
+
 test("brokers camera sessions without accepting camera targets or credentials", async () => {
   const harness = createWindowHarness();
   const client = createPiPhiWidgetClient({ window: harness.window });

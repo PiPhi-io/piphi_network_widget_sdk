@@ -1,6 +1,6 @@
 {
   "name": "piphi-network-widget-sdk",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "TypeScript SDK for building declarative and sandboxed PiPhi dashboard widgets.",
   "type": "module",
   "sideEffects": false,
@@ -39,6 +39,14 @@
     "./declarative": {
       "types": "./dist/declarative.d.ts",
       "import": "./dist/declarative.js"
+    },
+    "./optimistic-control": {
+      "types": "./dist/optimistic-control.d.ts",
+      "import": "./dist/optimistic-control.js"
+    },
+    "./recovery-session": {
+      "types": "./dist/recovery-session.d.ts",
+      "import": "./dist/recovery-session.js"
     },
     "./experience-kit.css": "./experience-kit.css"
   },
@@ -80,6 +88,7 @@
   "author": "PiPhi Network",
   "devDependencies": {
     "fflate": "0.8.3",
+    "jsdom": "^26.1.0",
     "typescript": "~5.8.3"
   }
 }

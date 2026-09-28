@@ -1,20 +1,54 @@
 :root {
   --piphi-widget-accent: #2563eb;
-  --piphi-widget-positive: #059669;
-  --piphi-widget-warning: #d97706;
-  --piphi-widget-danger: #dc2626;
-  --piphi-widget-surface: color-mix(in srgb, currentColor 6%, transparent);
-  --piphi-widget-surface-muted: color-mix(in srgb, currentColor 4%, transparent);
-  --piphi-widget-text: currentColor;
-  --piphi-widget-text-muted: color-mix(in srgb, currentColor 68%, transparent);
-  --piphi-widget-surface-strong: color-mix(in srgb, currentColor 10%, transparent);
-  --piphi-widget-border: color-mix(in srgb, currentColor 14%, transparent);
-  --piphi-widget-radius: 12px;
-  --piphi-widget-control-radius: 10px;
-  --piphi-widget-gap: 0.65rem;
+  --piphi-widget-positive: #047857;
+  --piphi-widget-warning: #b45309;
+  --piphi-widget-danger: #b91c1c;
+  --piphi-widget-canvas: #f8fafc;
+  --piphi-widget-surface: #ffffff;
+  --piphi-widget-surface-muted: #f1f5f9;
+  --piphi-widget-surface-strong: #e2e8f0;
+  --piphi-widget-border: #d7e0eb;
+  --piphi-widget-text: #0f172a;
+  --piphi-widget-text-muted: #52647a;
+  --piphi-widget-text-on-accent: #ffffff;
+  --piphi-widget-font-family: "SF Pro", "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --piphi-widget-font-size: 16px;
+  --piphi-widget-font-size-label: 12px;
+  --piphi-widget-font-size-title: 14px;
+  --piphi-widget-font-size-value: 18px;
+  --piphi-widget-font-size-hero: 24px;
+  --piphi-widget-line-height: 1.45;
+  --piphi-widget-radius: 14px;
+  --piphi-widget-control-radius: 12px;
+  --piphi-widget-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+  --piphi-widget-shadow-raised: 0 10px 28px rgb(15 23 42 / 14%);
+  --piphi-widget-space-1: 0.25rem;
+  --piphi-widget-space-2: 0.5rem;
+  --piphi-widget-space-3: 0.75rem;
+  --piphi-widget-space-4: 1rem;
+  --piphi-widget-content-gap: 0.5rem;
+  --piphi-widget-metric-height: 3.75rem;
+  --piphi-widget-control-height: 2.75rem;
+  --piphi-widget-focus-ring: 0 0 0 3px rgb(37 99 235 / 34%);
+  --piphi-widget-motion-duration: 160ms;
   --piphi-domain-accent: var(--piphi-widget-accent);
   color-scheme: light dark;
   color: var(--piphi-widget-text);
+  font-family: var(--piphi-widget-font-family);
+  font-size: var(--piphi-widget-font-size);
+  line-height: var(--piphi-widget-line-height);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+.piphi-experience {
+  width: 100%;
+  min-width: 0;
+  color: var(--piphi-widget-text);
+  font: inherit;
+  container-type: inline-size;
 }
 
 .piphi-stack,
@@ -23,7 +57,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--piphi-widget-gap);
+  gap: var(--piphi-widget-space-3);
 }
 
 .piphi-grid {
@@ -32,10 +66,69 @@
 }
 
 .piphi-group {
-  padding: 0.75rem;
+  padding: var(--piphi-widget-space-3);
   border: 1px solid var(--piphi-widget-border);
-  border-radius: calc(var(--piphi-widget-radius) + 0.1rem);
-  background: color-mix(in srgb, currentColor 3%, transparent);
+  border-radius: calc(var(--piphi-widget-radius) + 2px);
+  background: color-mix(in srgb, var(--piphi-widget-surface-muted) 76%, transparent);
+  box-shadow: var(--piphi-widget-shadow);
+}
+
+.piphi-card-header {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--piphi-widget-space-2);
+}
+
+.piphi-card-header__copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+}
+
+.piphi-title,
+.piphi-subtitle,
+.piphi-label,
+.piphi-value,
+.piphi-meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.piphi-title {
+  color: var(--piphi-widget-text);
+  font-size: var(--piphi-widget-font-size-title);
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.piphi-subtitle,
+.piphi-label,
+.piphi-meta { color: var(--piphi-widget-text-muted); }
+
+.piphi-subtitle,
+.piphi-meta { font-size: var(--piphi-widget-font-size-label); }
+
+.piphi-label {
+  font-size: var(--piphi-widget-font-size-label);
+  font-weight: 560;
+  letter-spacing: 0.01em;
+}
+
+.piphi-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--piphi-widget-control-radius);
+  background: color-mix(in srgb, var(--piphi-domain-accent) 14%, var(--piphi-widget-surface));
+  color: var(--piphi-domain-accent);
+}
+
+.piphi-icon > svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .piphi-reading,
@@ -45,16 +138,17 @@
   flex-direction: column;
   justify-content: center;
   gap: 0.3rem;
-  padding: 0.7rem;
+  padding: var(--piphi-widget-space-3);
   border: 1px solid transparent;
   border-radius: var(--piphi-widget-radius);
-  background: var(--piphi-widget-surface);
-  color: inherit;
+  background: var(--piphi-widget-surface-muted);
+  color: var(--piphi-widget-text);
+  box-shadow: var(--piphi-widget-shadow);
 }
 
 .piphi-reading[data-emphasis="hero"] {
   min-height: 5rem;
-  background: color-mix(in srgb, var(--piphi-domain-accent) 12%, transparent);
+  background: color-mix(in srgb, var(--piphi-domain-accent) 13%, var(--piphi-widget-surface));
 }
 
 .piphi-reading[data-emphasis="compact"] {
@@ -64,22 +158,19 @@
   justify-content: space-between;
 }
 
-.piphi-label {
-  color: var(--piphi-widget-text-muted);
-  font-size: 0.72rem;
-}
-
 .piphi-value {
-  overflow-wrap: anywhere;
-  font-size: 1.1rem;
-  font-weight: 750;
-  line-height: 1.15;
+  color: var(--piphi-widget-text);
+  font-size: clamp(var(--piphi-widget-font-size-value), 6cqw, var(--piphi-widget-font-size-hero));
+  font-weight: 760;
+  letter-spacing: -0.018em;
+  line-height: 1.1;
 }
 
 .piphi-status {
   display: inline-flex;
   align-items: center;
   gap: 0.48rem;
+  color: var(--piphi-widget-text);
 }
 
 .piphi-status::before {
@@ -87,54 +178,241 @@
   height: 0.62rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  background: color-mix(in srgb, currentColor 24%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 6%, transparent);
+  background: var(--piphi-widget-surface-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--piphi-widget-border) 64%, transparent);
   content: "";
 }
 
 .piphi-status[data-active="true"]::before {
   background: var(--piphi-domain-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--piphi-domain-accent) 17%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--piphi-domain-accent) 20%, transparent);
 }
 
-[data-piphi-domain="temperature"] { --piphi-domain-accent: #f97316; }
-[data-piphi-domain="humidity"] { --piphi-domain-accent: #0ea5e9; }
-[data-piphi-domain="air_quality"] { --piphi-domain-accent: #10b981; }
-[data-piphi-domain="energy"],
-[data-piphi-domain="power"] { --piphi-domain-accent: #eab308; }
-[data-piphi-domain="battery"] { --piphi-domain-accent: #22c55e; }
-[data-piphi-domain="light"] { --piphi-domain-accent: #f59e0b; }
-[data-piphi-domain="switch"] { --piphi-domain-accent: #06b6d4; }
-[data-piphi-domain="lock"] { --piphi-domain-accent: #8b5cf6; }
-[data-piphi-domain="door"],
-[data-piphi-domain="motion"] { --piphi-domain-accent: #ec4899; }
-[data-piphi-domain="connectivity"] { --piphi-domain-accent: #14b8a6; }
-
 .piphi-control {
-  min-height: 2.75rem;
+  min-height: 44px;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   border-color: var(--piphi-widget-border);
   border-radius: var(--piphi-widget-control-radius);
   font: inherit;
+  text-align: start;
 }
 
-.piphi-control:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--piphi-domain-accent) 32%, transparent);
-  outline-offset: 2px;
+button.piphi-control,
+.piphi-control[role="button"] {
+  cursor: pointer;
+  transition: background-color var(--piphi-widget-motion-duration) ease,
+    border-color var(--piphi-widget-motion-duration) ease,
+    box-shadow var(--piphi-widget-motion-duration) ease,
+    transform var(--piphi-widget-motion-duration) ease;
+}
+
+button.piphi-control:hover,
+.piphi-control[role="button"]:hover {
+  border-color: color-mix(in srgb, var(--piphi-domain-accent) 48%, var(--piphi-widget-border));
+  background: color-mix(in srgb, var(--piphi-domain-accent) 7%, var(--piphi-widget-surface-muted));
+}
+
+button.piphi-control:active,
+.piphi-control[role="button"]:active { transform: scale(0.985); }
+
+.piphi-control:focus-visible,
+.piphi-switch:focus-visible,
+.piphi-action:focus-visible {
+  outline: none;
+  box-shadow: var(--piphi-widget-focus-ring);
+}
+
+.piphi-control:disabled,
+.piphi-control[aria-disabled="true"],
+.piphi-switch:disabled,
+.piphi-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.piphi-switch {
+  --piphi-switch-checked-translate: 18px;
+  position: relative;
+  width: 48px;
+  min-width: 48px;
+  height: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--piphi-widget-motion-duration) ease,
+    border-color var(--piphi-widget-motion-duration) ease,
+    box-shadow var(--piphi-widget-motion-duration) ease;
+}
+
+.piphi-switch::before {
+  position: absolute;
+  inset-inline: 1px;
+  top: 50%;
+  height: 28px;
+  border: 1px solid var(--piphi-widget-border);
+  border-radius: 999px;
+  background: var(--piphi-widget-surface-strong);
+  content: "";
+  transform: translateY(-50%);
+  transition: background-color var(--piphi-widget-motion-duration) ease,
+    border-color var(--piphi-widget-motion-duration) ease;
+}
+
+.piphi-switch::after {
+  position: absolute;
+  inset-inline-start: 5px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--piphi-widget-surface);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 24%);
+  content: "";
+  transform: translateY(-50%);
+  transition: transform var(--piphi-widget-motion-duration) ease;
+}
+
+.piphi-switch[aria-checked="true"],
+.piphi-switch[data-active="true"] {
+  color: var(--piphi-domain-accent);
+}
+
+.piphi-switch[aria-checked="true"]::before,
+.piphi-switch[data-active="true"]::before {
+  border-color: var(--piphi-domain-accent);
+  background: var(--piphi-domain-accent);
+}
+
+.piphi-switch[aria-checked="true"]::after,
+.piphi-switch[data-active="true"]::after {
+  transform: translate(var(--piphi-switch-checked-translate), -50%);
+}
+
+[dir="rtl"] .piphi-switch { --piphi-switch-checked-translate: -18px; }
+
+.piphi-action {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--piphi-widget-space-2);
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--piphi-domain-accent);
+  border-radius: var(--piphi-widget-control-radius);
+  background: var(--piphi-domain-accent);
+  color: var(--piphi-widget-text-on-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.piphi-progress {
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--piphi-widget-surface-strong);
+}
+
+.piphi-progress > span {
+  display: block;
+  width: var(--piphi-progress, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--piphi-domain-accent);
+  transition: width var(--piphi-widget-motion-duration) ease;
+}
+
+.piphi-state {
+  min-height: 6rem;
+  display: grid;
+  place-items: center;
+  gap: var(--piphi-widget-space-2);
+  padding: var(--piphi-widget-space-4);
+  border: 1px dashed var(--piphi-widget-border);
+  border-radius: var(--piphi-widget-radius);
+  background: color-mix(in srgb, var(--piphi-widget-surface-muted) 65%, transparent);
+  color: var(--piphi-widget-text-muted);
+  text-align: center;
+}
+
+.piphi-state[data-state="error"] {
+  border-color: color-mix(in srgb, var(--piphi-widget-danger) 45%, var(--piphi-widget-border));
+  color: var(--piphi-widget-danger);
+}
+
+.piphi-skeleton {
+  min-height: 1rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--piphi-widget-surface-muted) 20%, var(--piphi-widget-surface-strong) 42%, var(--piphi-widget-surface-muted) 64%);
+  background-size: 240% 100%;
+  animation: piphi-skeleton-pulse 1.25s ease-in-out infinite;
+}
+
+@keyframes piphi-skeleton-pulse {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+[data-piphi-domain="temperature"] { --piphi-domain-accent: #f97316; }
+[data-piphi-domain="humidity"] { --piphi-domain-accent: #0284c7; }
+[data-piphi-domain="air_quality"] { --piphi-domain-accent: #059669; }
+[data-piphi-domain="energy"],
+[data-piphi-domain="power"] { --piphi-domain-accent: #ca8a04; }
+[data-piphi-domain="battery"] { --piphi-domain-accent: #16a34a; }
+[data-piphi-domain="light"] { --piphi-domain-accent: #d97706; }
+[data-piphi-domain="switch"] { --piphi-domain-accent: #0891b2; }
+[data-piphi-domain="lock"] { --piphi-domain-accent: #7c3aed; }
+[data-piphi-domain="door"],
+[data-piphi-domain="motion"] { --piphi-domain-accent: #db2777; }
+[data-piphi-domain="connectivity"] { --piphi-domain-accent: #0f766e; }
+
+@container (max-width: 30rem) {
+  .piphi-grid { grid-template-columns: 1fr; }
+  .piphi-reading[data-emphasis="compact"] {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 520px) {
-  .piphi-grid {
-    grid-template-columns: 1fr;
+  .piphi-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-contrast: more) {
+  .piphi-group,
+  .piphi-reading,
+  .piphi-control,
+  .piphi-state { border-color: currentColor; }
+}
+
+@media (forced-colors: active) {
+  .piphi-icon,
+  .piphi-reading,
+  .piphi-control,
+  .piphi-switch,
+  .piphi-action,
+  .piphi-state {
+    border: 1px solid CanvasText;
+    forced-color-adjust: auto;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .piphi-control,
-  .piphi-reading {
-    scroll-behavior: auto;
-    transition: none;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

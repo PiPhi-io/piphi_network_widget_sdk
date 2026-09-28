@@ -18,6 +18,32 @@ export interface PiPhiWidgetThemeDefinition {
   color_scheme?: "auto" | "light" | "dark";
 }
 
+export type PiPhiWidgetShellMode = "core" | "full-bleed";
+export type PiPhiWidgetContentSurface = "transparent" | "opaque";
+export type PiPhiWidgetAppearanceControl = "icon" | "title" | "surface" | "opacity" | "radius" | "shadow";
+
+/** Declares the visual boundary between Core's card shell and package content. */
+export interface PiPhiWidgetPresentationContract {
+  contract_version: "1";
+  shell: PiPhiWidgetShellMode;
+  content_surface: PiPhiWidgetContentSurface;
+  typography: "core";
+  appearance_controls: PiPhiWidgetAppearanceControl[];
+}
+
+export type PiPhiWidgetInteractionTargetKind = "card" | "binding" | "control";
+export type PiPhiWidgetInteractionAction = "none" | "more-info" | "history" | "popout" | "navigate" | "command" | "refresh";
+
+/** A semantic, user-configurable hit target exposed by the widget. */
+export interface PiPhiWidgetInteractionTargetDefinition {
+  id: string;
+  label: string;
+  kind: PiPhiWidgetInteractionTargetKind;
+  binding_slot_id?: string;
+  allowed_actions: PiPhiWidgetInteractionAction[];
+  default_action: PiPhiWidgetInteractionAction;
+}
+
 export interface PiPhiWidgetManifest {
   id: string;
   name: string;
@@ -30,6 +56,8 @@ export interface PiPhiWidgetManifest {
   style_integrities?: Record<string, string>;
   themes?: PiPhiWidgetThemeDefinition[];
   default_theme_id?: string;
+  presentation?: PiPhiWidgetPresentationContract;
+  interaction_targets?: PiPhiWidgetInteractionTargetDefinition[];
   framework?: string;
   binding_modes: Array<"read" | "write" | "read-write">;
   value_kinds: Array<"numeric" | "text" | "boolean" | "enum" | "json" | "command">;
@@ -80,6 +108,9 @@ const VALUE_KINDS = new Set(["numeric", "text", "boolean", "enum", "json", "comm
 const SAFE_SANDBOX_TOKENS = new Set(["allow-scripts"]);
 const REQUIRED_STATES = ["loading", "live", "stale", "offline", "reconnecting", "denied", "error"];
 const ARCHIVE_INTEGRITY = /^sha256:[a-f0-9]{64}$/;
+const APPEARANCE_CONTROLS = new Set(["icon", "title", "surface", "opacity", "radius", "shadow"]);
+const INTERACTION_TARGET_KINDS = new Set(["card", "binding", "control"]);
+const INTERACTION_ACTIONS = new Set(["none", "more-info", "history", "popout", "navigate", "command", "refresh"]);
 
 function isSafeAssetPath(value: unknown): boolean {
   if (typeof value !== "string" || !value.trim()) return false;
@@ -132,6 +163,41 @@ export function validateWidgetManifest(value: unknown): PiPhiWidgetManifestDiagn
     if (theme.color_scheme !== undefined && !["auto", "light", "dark"].includes(String(theme.color_scheme))) error(`themes.${index}.color_scheme`, "invalid_theme_color_scheme", "Use auto, light, or dark.");
   });
   if (manifest.default_theme_id !== undefined && !themeIds.has(String(manifest.default_theme_id))) error("default_theme_id", "unknown_default_theme", "Default theme must reference a declared theme.");
+  if (manifest.presentation !== undefined) {
+    const presentation = manifest.presentation && typeof manifest.presentation === "object" && !Array.isArray(manifest.presentation)
+      ? manifest.presentation as Record<string, unknown> : {};
+    if (presentation.contract_version !== "1") error("presentation.contract_version", "invalid_presentation_contract", "Use presentation contract version 1.");
+    if (!["core", "full-bleed"].includes(String(presentation.shell))) error("presentation.shell", "invalid_shell_mode", "Use core or full-bleed shell ownership.");
+    if (!["transparent", "opaque"].includes(String(presentation.content_surface))) error("presentation.content_surface", "invalid_content_surface", "Use transparent or opaque content surface.");
+    if (presentation.typography !== "core") error("presentation.typography", "invalid_typography_policy", "Widget typography must inherit Core's type system.");
+    if (!Array.isArray(presentation.appearance_controls)) error("presentation.appearance_controls", "missing_appearance_controls", "Declare the Core appearance controls this widget supports.");
+    const controls = Array.isArray(presentation.appearance_controls) ? presentation.appearance_controls.map(String) : [];
+    if (controls.length !== new Set(controls).size) error("presentation.appearance_controls", "duplicate_appearance_control", "Appearance controls must be unique.");
+    controls.forEach((control, index) => { if (!APPEARANCE_CONTROLS.has(control)) error(`presentation.appearance_controls.${index}`, "invalid_appearance_control", "Use a supported Core appearance control."); });
+    if (presentation.shell === "core" && presentation.content_surface !== "transparent") error("presentation.content_surface", "core_shell_requires_transparency", "Core-shell widgets must keep their content root transparent.");
+  }
+  const interactionTargets = Array.isArray(manifest.interaction_targets) ? manifest.interaction_targets : [];
+  if (manifest.interaction_targets !== undefined && !Array.isArray(manifest.interaction_targets)) error("interaction_targets", "invalid_interaction_targets", "Interaction targets must be an array.");
+  if (interactionTargets.length > 16) error("interaction_targets", "too_many_interaction_targets", "Declare no more than sixteen semantic interaction targets.");
+  const interactionTargetIds = new Set<string>();
+  interactionTargets.forEach((candidate, index) => {
+    const target = candidate && typeof candidate === "object" && !Array.isArray(candidate) ? candidate as Record<string, unknown> : {};
+    const id = String(target.id ?? "").trim();
+    if (!LOCAL_ID.test(id)) error(`interaction_targets.${index}.id`, "invalid_interaction_target_id", "Use a lowercase interaction target id.");
+    if (interactionTargetIds.has(id)) error(`interaction_targets.${index}.id`, "duplicate_interaction_target_id", `Interaction target '${id}' is duplicated.`);
+    interactionTargetIds.add(id);
+    const label = String(target.label ?? "").trim();
+    if (!label) error(`interaction_targets.${index}.label`, "missing_interaction_target_label", "Each interaction target needs a user-facing label.");
+    if (label.length > 80) error(`interaction_targets.${index}.label`, "interaction_target_label_too_long", "Interaction target labels must be 80 characters or fewer.");
+    if (!INTERACTION_TARGET_KINDS.has(String(target.kind ?? ""))) error(`interaction_targets.${index}.kind`, "invalid_interaction_target_kind", "Use card, binding, or control.");
+    if (target.kind === "binding" && !LOCAL_ID.test(String(target.binding_slot_id ?? ""))) error(`interaction_targets.${index}.binding_slot_id`, "missing_interaction_binding", "Binding targets must reference a binding slot.");
+    if (target.kind !== "binding" && target.binding_slot_id !== undefined) error(`interaction_targets.${index}.binding_slot_id`, "unexpected_interaction_binding", "Only binding targets may reference a binding slot.");
+    const actions = Array.isArray(target.allowed_actions) ? target.allowed_actions.map(String) : [];
+    if (actions.length === 0) error(`interaction_targets.${index}.allowed_actions`, "missing_interaction_actions", "Declare at least one allowed action.");
+    if (actions.length !== new Set(actions).size) error(`interaction_targets.${index}.allowed_actions`, "duplicate_interaction_action", "Allowed actions must be unique.");
+    actions.forEach((action, actionIndex) => { if (!INTERACTION_ACTIONS.has(action)) error(`interaction_targets.${index}.allowed_actions.${actionIndex}`, "invalid_interaction_action", "Use a supported Core interaction action."); });
+    if (!actions.includes(String(target.default_action ?? ""))) error(`interaction_targets.${index}.default_action`, "invalid_default_interaction", "Default action must be included in allowed actions.");
+  });
   const settings = Array.isArray(manifest.settings) ? manifest.settings : [];
   const settingIds = new Set<string>();
   settings.forEach((candidate, index) => {
@@ -179,6 +245,8 @@ export function validateWidgetManifest(value: unknown): PiPhiWidgetManifestDiagn
   for (const token of sandbox) if (!SAFE_SANDBOX_TOKENS.has(String(token))) error("security.sandbox", "unsafe_sandbox_token", `Sandbox token '${String(token)}' is not permitted.`);
   const permissions = Array.isArray(security.permissions) ? security.permissions.map(String) : [];
   if (permissions.includes("host.executeCommand") && (!Array.isArray(security.allowed_commands) || security.allowed_commands.length === 0)) error("security.allowed_commands", "missing_command_allowlist", "Command widgets must explicitly allowlist commands.");
+  if (interactionTargets.some((candidate) => candidate && typeof candidate === "object" && Array.isArray((candidate as Record<string, unknown>).allowed_actions) && ((candidate as Record<string, unknown>).allowed_actions as unknown[]).includes("command")) && !permissions.includes("host.executeCommand")) error("interaction_targets", "command_interaction_requires_permission", "Command interactions require host.executeCommand permission and an explicit command allow-list.");
+  if (interactionTargets.some((candidate) => candidate && typeof candidate === "object" && Array.isArray((candidate as Record<string, unknown>).allowed_actions) && ((candidate as Record<string, unknown>).allowed_actions as unknown[]).includes("navigate")) && !permissions.includes("host.navigate")) error("interaction_targets", "navigation_interaction_requires_permission", "Navigation interactions require host.navigate permission.");
   const csp = security.csp && typeof security.csp === "object" && !Array.isArray(security.csp) ? security.csp as Record<string, unknown> : {};
   for (const [directive, sources] of Object.entries(csp)) {
     if (!Array.isArray(sources)) { error(`security.csp.${directive}`, "invalid_csp_sources", "CSP sources must be an array."); continue; }

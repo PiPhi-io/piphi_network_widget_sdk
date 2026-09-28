@@ -4,6 +4,51 @@
 
 The SDK provides the versioned host protocol, portable widget and binding types, a typed client, lifecycle subscriptions, device state reads, permission-aware commands, navigation, settings, and responsive height reporting. Device integrations and server runtimes remain in PiPhi's Python Runtime SDK.
 
+### Predictable recovery from interrupted data
+
+Use `createRecoverySession` from
+`piphi-network-widget-sdk/recovery-session` to pair a forced state read with
+exactly one live subscription. Repeated Retry activation shares one request;
+`error`, `closed`, and `denied` events invalidate the current subscription so
+the next Retry installs a fresh one. `resolveRecoveryStatus` maps host lifecycle
+events to a consistent loading, live, stale, offline, or actionable error model.
+Keep the last readings visible with `stale: true`, label the Retry control, and
+return focus after recovery. `recover()` always resolves with an explicit
+`{ ok: true }` or `{ ok: false, error }` result after callbacks complete; callback
+exceptions become failure results. Call `stop()` during widget teardown. Stop is
+permanent and idempotent: pending work cannot subscribe or update the widget
+after teardown.
+
+```ts
+import { createRecoverySession } from "piphi-network-widget-sdk/recovery-session";
+
+const recovery = createRecoverySession({
+  read: () => host.getCapabilityState({ forceRefresh: true }),
+  subscribe: (listener) => host.subscribeState({}, listener),
+  onRead: renderState,
+  onEvent: renderEvent,
+  onError: () => showRetry(),
+  onRecovered: () => hideRetry(),
+});
+
+retryButton.addEventListener("click", () => void recovery.recover());
+window.addEventListener("pagehide", () => void recovery.stop(), { once: true });
+```
+
+### Responsive controls without false confirmations
+
+Use `createOptimisticControl` from `piphi-network-widget-sdk/optimistic-control`
+for power, brightness, and similar live device controls. Call `begin(next)`
+before `host.executeCommand`, `accept()` when the host accepts the command,
+and `reject()` when it fails. Feed subscribed readings to `observe(value,
+collectedAt)`; show `control.value` in the UI. The helper holds the intended
+value through stale readings, reconciles to fresh device state, and silently
+falls back to the last reading if no confirmation arrives within the configured
+window. A host command response means acceptance, not a confirmed device state;
+display genuine command errors separately. Call `reset()` when changing device
+bindings and `destroy()` on widget teardown. Sandbox widgets that do not bundle
+dependencies may ship the helper as a relative module in their signed artifact.
+
 ## Start a widget
 
 ```bash
@@ -80,13 +125,21 @@ Sandboxed widgets can opt into the same framework-neutral visual foundation:
 import "piphi-network-widget-sdk/experience-kit.css";
 ```
 
-Use `.piphi-stack`, `.piphi-grid`, `.piphi-group`, `.piphi-reading`,
-`.piphi-status`, and `.piphi-control` with `data-piphi-domain` and
-`data-emphasis` attributes. Package-owned theme stylesheets may override only
-the documented `--piphi-widget-*` tokens inside the widget iframe. They cannot
-change the Core card shell, dashboard grid, resize behavior, status overlay, or
-other widgets. This gives developers room for a recognizable visual identity
-without breaking dashboard consistency.
+Use `.piphi-experience` as the content root, then compose `.piphi-stack`,
+`.piphi-grid`, `.piphi-group`, `.piphi-card-header`, `.piphi-reading`,
+`.piphi-status`, `.piphi-progress`, `.piphi-control`, `.piphi-switch`, and
+`.piphi-action`. Loading, empty, and error views use `.piphi-skeleton` and
+`.piphi-state`. Domain and emphasis attributes add smart-home meaning without
+requiring one-off CSS.
+
+The foundation provides a Core-owned type scale, spacing rhythm, surfaces,
+borders, elevation, focus ring, minimum control height, semantic colors, and
+responsive container behavior. It also handles increased contrast, forced
+colors, reduced motion, narrow cards, and disabled controls. Developers supply
+semantic markup and may theme the documented `--piphi-widget-*` tokens inside
+the widget iframe. They cannot change the Core card shell, dashboard grid,
+resize behavior, status overlay, or other widgets. This gives developers room
+for a recognizable visual identity without breaking dashboard consistency.
 
 Declare up to eight named themes in a sandboxed widget package. Core shows these
 names in the card customization drawer, persists the choice per card, and loads
@@ -122,6 +175,63 @@ focus treatment, and readable text. Package selectors, URLs, imports, and
 arbitrary properties fail closed. Declarative metric, status, and progress
 items may also declare a non-mutating `action` of `details` or `refresh`; Core
 executes it with native keyboard and assistive-technology behavior.
+
+### Shell ownership and semantic interactions
+
+New widgets should explicitly declare which layer owns each visual decision.
+Use the Core shell for the normal dashboard experience: Core owns the card
+surface, title, icon, focus treatment, sizing, status, and accessibility, while
+the package renders transparent content inside it. Full-bleed is reserved for
+experiences such as camera or media surfaces that genuinely need the whole
+card. Typography remains Core-owned in both modes so installed experiences sit
+comfortably beside native cards.
+
+```json
+{
+  "presentation": {
+    "contract_version": "1",
+    "shell": "core",
+    "content_surface": "transparent",
+    "typography": "core",
+    "appearance_controls": ["icon", "title", "surface", "opacity", "radius"]
+  }
+}
+```
+
+`appearance_controls` is an allow-list: Core only shows customization controls
+the widget can honor. Older packages may omit `presentation`; Core continues to
+load them through its compatibility policy.
+
+Widgets also declare meaningful interaction targets instead of making Core
+guess what a click inside arbitrary markup represents:
+
+```json
+{
+  "interaction_targets": [
+    {
+      "id": "temperature",
+      "label": "Temperature",
+      "kind": "binding",
+      "binding_slot_id": "temperature",
+      "allowed_actions": ["more-info", "history", "popout"],
+      "default_action": "more-info"
+    }
+  ]
+}
+```
+
+Activate a declared target from package content and let Core perform the trusted
+shell behavior:
+
+```ts
+await host.activateInteraction("temperature");
+```
+
+Core resolves the target's declared default action, verifies it against the
+allow-list and current permissions, and performs it in the trusted shell. A
+`command` action requires
+`host.executeCommand` permission and remains subject to the package's command
+allow-list.
 
 ## Install
 
