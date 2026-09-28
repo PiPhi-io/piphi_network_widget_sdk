@@ -13,6 +13,7 @@ export type PiPhiWidgetHostMethod =
   | "host.listPermissions"
   | "host.navigate"
   | "host.executeCommand"
+  | "host.activateInteraction"
   | "host.openCameraSession"
   | "host.closeCameraSession"
   | "host.setHeight"
@@ -81,6 +82,16 @@ export interface PiPhiWidgetPackageContext {
   valueKinds?: string[];
   capabilityRequirements?: string[];
   themeId?: string;
+  interactionTargets?: PiPhiWidgetInteractionTarget[];
+}
+
+export interface PiPhiWidgetInteractionTarget {
+  id: string;
+  label: string;
+  kind: "card" | "binding" | "control";
+  binding_slot_id?: string;
+  allowed_actions: Array<"none" | "more-info" | "history" | "popout" | "navigate" | "command" | "refresh">;
+  default_action: "none" | "more-info" | "history" | "popout" | "navigate" | "command" | "refresh";
 }
 
 export interface PiPhiWidgetExperienceTheme {
@@ -94,12 +105,34 @@ export interface PiPhiWidgetDesignTokens {
   positive: string;
   warning: string;
   danger: string;
+  canvas: string;
   surface: string;
   surfaceMuted: string;
+  surfaceStrong: string;
+  border: string;
   text: string;
   textMuted: string;
+  textOnAccent: string;
+  fontFamily: string;
+  fontSize: string;
+  fontSizeLabel: string;
+  fontSizeTitle: string;
+  fontSizeValue: string;
+  fontSizeHero: string;
+  lineHeight: string;
   radius: string;
   controlRadius: string;
+  shadow: string;
+  shadowRaised: string;
+  space1: string;
+  space2: string;
+  space3: string;
+  space4: string;
+  contentGap: string;
+  metricHeight: string;
+  controlHeight: string;
+  focusRing: string;
+  motionDuration: string;
 }
 
 export interface PiPhiWidgetHostTheme {

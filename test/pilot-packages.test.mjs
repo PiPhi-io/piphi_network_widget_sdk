@@ -6,12 +6,12 @@ import test from "node:test";
 import { validateDeclarativeWidgetRecipe } from "../dist/declarative.js";
 
 for (const packageName of ["whole-home-energy", "home-health"]) {
-  test(`${packageName} is a valid SDK 0.5 declarative package`, async () => {
+  test(`${packageName} is compatible with the current declarative SDK`, async () => {
     const source = JSON.parse(await readFile(
       resolve(import.meta.dirname, "..", "pilot-packages", packageName, "package.source.json"),
       "utf8",
     ));
-    assert.equal(source.sdk_version_range, ">=0.5,<0.6");
+    assert.equal(source.sdk_version_range, ">=0.5,<0.7");
     const slots = new Set(source.widgets[0].binding_slots.map((slot) => slot.id));
     assert.deepEqual(validateDeclarativeWidgetRecipe(source.widgets[0].recipe, {
       bindingSlotIds: [...slots],

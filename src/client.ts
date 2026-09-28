@@ -37,6 +37,14 @@ export interface PiPhiWidgetCommandParams {
   args?: Record<string, unknown>;
 }
 
+export interface PiPhiWidgetInteractionParams {
+  path?: string;
+  href?: string;
+  newTab?: boolean;
+  commandName?: string;
+  args?: Record<string, unknown>;
+}
+
 export interface PiPhiWidgetCameraOfferParams {
   slotId?: string;
   sdp: string;
@@ -70,6 +78,10 @@ export interface PiPhiWidgetHostApi {
   listPermissions(): Promise<PiPhiWidgetPermission[]>;
   navigate(params: PiPhiWidgetNavigationParams): Promise<{ ok: boolean }>;
   executeCommand<T = unknown>(params: PiPhiWidgetCommandParams): Promise<T>;
+  activateInteraction(
+    targetId: string,
+    params?: PiPhiWidgetInteractionParams,
+  ): Promise<{ ok: boolean; action: string; targetId: string }>;
   openCameraSession(params: PiPhiWidgetCameraOfferParams): Promise<PiPhiWidgetCameraSession>;
   closeCameraSession(sessionId: string): Promise<{ ok: boolean }>;
   setHeight(height: number): Promise<{ ok: boolean; height: number; instanceId?: string }>;
@@ -222,6 +234,7 @@ export function createPiPhiWidgetClient(
     listPermissions: () => request("host.listPermissions"),
     navigate: (params) => request("host.navigate", { ...params }),
     executeCommand: (params) => request("host.executeCommand", { ...params }),
+    activateInteraction: (targetId, params = {}) => request("host.activateInteraction", { ...params, targetId }),
     openCameraSession: (params) => request("host.openCameraSession", { ...params }),
     closeCameraSession: (sessionId) => request("host.closeCameraSession", { sessionId }),
     setHeight: (height) => request("host.setHeight", { height }),

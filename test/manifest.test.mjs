@@ -61,3 +61,68 @@ test("validates bounded package themes and their default", () => {
   assert.ok(diagnostics.some((item) => item.code === "unsafe_theme_stylesheet"));
   assert.ok(diagnostics.some((item) => item.code === "unknown_default_theme"));
 });
+
+test("validates Core shell ownership and semantic interaction targets", () => {
+  const contracted = {
+    ...valid,
+    presentation: {
+      contract_version: "1",
+      shell: "core",
+      content_surface: "transparent",
+      typography: "core",
+      appearance_controls: ["icon", "title", "surface", "opacity", "radius"],
+    },
+    interaction_targets: [{
+      id: "temperature",
+      label: "Temperature",
+      kind: "binding",
+      binding_slot_id: "temperature",
+      allowed_actions: ["more-info", "history", "popout"],
+      default_action: "more-info",
+    }],
+  };
+  assert.deepEqual(validateWidgetManifest(contracted), []);
+
+  const diagnostics = validateWidgetManifest({
+    ...contracted,
+    presentation: { ...contracted.presentation, content_surface: "opaque", appearance_controls: ["icon", "icon", "font"] },
+    interaction_targets: [{ id: "command", label: "Run", kind: "control", allowed_actions: ["command"], default_action: "history" }],
+  });
+  assert.ok(diagnostics.some((item) => item.code === "core_shell_requires_transparency"));
+  assert.ok(diagnostics.some((item) => item.code === "duplicate_appearance_control"));
+  assert.ok(diagnostics.some((item) => item.code === "invalid_appearance_control"));
+  assert.ok(diagnostics.some((item) => item.code === "invalid_default_interaction"));
+  assert.ok(diagnostics.some((item) => item.code === "command_interaction_requires_permission"));
+
+  const navigationDiagnostics = validateWidgetManifest({
+    ...contracted,
+    interaction_targets: [{
+      id: "open-room",
+      label: "Open room",
+      kind: "card",
+      allowed_actions: ["navigate"],
+      default_action: "navigate",
+    }],
+  });
+  assert.ok(navigationDiagnostics.some((item) => item.code === "navigation_interaction_requires_permission"));
+
+  const unownedBinding = validateWidgetManifest({
+    ...contracted,
+    presentation: { ...contracted.presentation, appearance_controls: undefined },
+    interaction_targets: [{ ...contracted.interaction_targets[0], kind: "card" }],
+  });
+  assert.ok(unownedBinding.some((item) => item.code === "missing_appearance_controls"));
+  assert.ok(unownedBinding.some((item) => item.code === "unexpected_interaction_binding"));
+
+  const excessiveTargets = validateWidgetManifest({
+    ...contracted,
+    interaction_targets: Array.from({ length: 17 }, (_, index) => ({
+      id: `target-${index}`,
+      label: `Target ${index}`,
+      kind: "card",
+      allowed_actions: ["more-info"],
+      default_action: "more-info",
+    })),
+  });
+  assert.ok(excessiveTargets.some((item) => item.code === "too_many_interaction_targets"));
+});
