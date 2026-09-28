@@ -1,6 +1,6 @@
 {
   "name": "piphi-network-widget-sdk",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "TypeScript SDK for building declarative and sandboxed PiPhi dashboard widgets.",
   "type": "module",
   "sideEffects": false,

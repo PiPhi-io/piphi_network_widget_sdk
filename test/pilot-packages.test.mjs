@@ -11,6 +11,7 @@ for (const packageName of ["whole-home-energy", "home-health"]) {
       resolve(import.meta.dirname, "..", "pilot-packages", packageName, "package.source.json"),
       "utf8",
     ));
+    assert.equal(source.identity.version, "0.1.2", "changed pilot artifacts must use a new immutable version");
     assert.equal(source.sdk_version_range, ">=0.5,<0.7");
     const slots = new Set(source.widgets[0].binding_slots.map((slot) => slot.id));
     assert.deepEqual(validateDeclarativeWidgetRecipe(source.widgets[0].recipe, {
