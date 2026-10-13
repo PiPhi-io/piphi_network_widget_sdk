@@ -35,6 +35,18 @@ test("publishes the framework-neutral Experience Kit stylesheet", async () => {
   assert.match(stylesheet, /color: var\(--piphi-widget-text\)/);
 });
 
+test("publishes the interaction TestKit API and governing JSON contracts", async () => {
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const targetSchema = JSON.parse(await readFile(new URL("../contracts/dashboard/widget-interaction-target-v2.schema.json", import.meta.url), "utf8"));
+  const testkitSchema = JSON.parse(await readFile(new URL("../contracts/dashboard/widget-interaction-testkit-v1.schema.json", import.meta.url), "utf8"));
+  assert.equal(packageJson.exports["./interaction-testkit"].import, "./dist/interaction-testkit.js");
+  assert.ok(packageJson.files.includes("contracts"));
+  assert.equal(targetSchema.additionalProperties, false);
+  assert.equal(testkitSchema.properties.results.minItems, 25);
+  assert.equal(testkitSchema.properties.results.maxItems, 25);
+  assert.equal(testkitSchema["x-piphi-required-case-ids"].length, 25);
+});
+
 test("ships package-theme controls in the local host simulator", async () => {
   const simulator = await readFile(new URL("../simulator/index.html", import.meta.url), "utf8");
   assert.match(simulator, /Experience theme/);

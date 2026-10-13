@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://piphi.io/contracts/dashboard/widget-interaction-testkit-v1.schema.json",
+  "title": "PiPhi Widget interaction TestKit report v1",
+  "description": "Portable, privacy-safe certification evidence for one widget. Duplicate, missing, and failed required cases are rejected by the semantic validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package_id", "widget_id", "results"],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "package_id": { "type": "string", "maxLength": 120, "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)+$", "description": "Canonical <publisher_id>.<package_id> identity." },
+    "widget_id": { "type": "string", "maxLength": 80, "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+    "results": { "type": "array", "minItems": 25, "maxItems": 25, "items": { "$ref": "#/$defs/result" } }
+  },
+  "$defs": {
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "passed", "evidence"],
+      "properties": {
+        "case_id": { "type": "string", "enum": ["target-activation", "permission-denial", "missing-capability", "command-allow-list-rejection", "confirmation-approve", "confirmation-cancel", "pin-approve", "pin-cancel", "nested-control-isolation", "input-pointer", "input-touch", "input-keyboard", "details-destination", "state-loading", "state-empty", "state-stale", "state-error", "responsive-compact", "responsive-expanded", "theme-light", "theme-dark", "direction-ltr", "direction-rtl", "reduced-motion", "accessible-name-and-focus"] },
+        "passed": { "const": true },
+        "evidence": { "type": "string", "maxLength": 240, "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)+(?:#[A-Za-z0-9._:-]+)?$" }
+      }
+    }
+  },
+  "x-piphi-required-case-ids": ["target-activation", "permission-denial", "missing-capability", "command-allow-list-rejection", "confirmation-approve", "confirmation-cancel", "pin-approve", "pin-cancel", "nested-control-isolation", "input-pointer", "input-touch", "input-keyboard", "details-destination", "state-loading", "state-empty", "state-stale", "state-error", "responsive-compact", "responsive-expanded", "theme-light", "theme-dark", "direction-ltr", "direction-rtl", "reduced-motion", "accessible-name-and-focus"],
+  "x-piphi-evidence-policy": {
+    "testkit-report": "Every result must use a package-relative reference; Core profiles are forbidden.",
+    "trusted-host": "Host-owned behavior selects a known Core profile directly in the signed manifest, outside this report contract."
+  }
+}

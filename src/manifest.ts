@@ -33,6 +33,13 @@ export interface PiPhiWidgetPresentationContract {
 
 export type PiPhiWidgetInteractionTargetKind = "card" | "binding" | "control";
 export type PiPhiWidgetInteractionAction = "none" | "more-info" | "history" | "popout" | "navigate" | "command" | "refresh";
+export type PiPhiWidgetInteractionSemanticRole = "details" | "primary-control" | "secondary-control" | "drill-down" | "media" | "navigation";
+export type PiPhiWidgetInteractionInput = "pointer" | "touch" | "keyboard";
+export type PiPhiWidgetInteractionAffordance = "none" | "details" | "inline" | "overflow" | "content";
+export type PiPhiWidgetInteractionDetailsTab = "overview" | "controls" | "history" | "activity";
+export type PiPhiWidgetInteractionRisk = "none" | "low" | "confirmation" | "privileged";
+export type PiPhiWidgetInteractionProtection = "none" | "confirmation" | "pin";
+export type PiPhiWidgetInteractionUnavailableBehavior = "hide" | "disable";
 
 /** A semantic, user-configurable hit target exposed by the widget. */
 export interface PiPhiWidgetInteractionTargetDefinition {
@@ -42,6 +49,15 @@ export interface PiPhiWidgetInteractionTargetDefinition {
   binding_slot_id?: string;
   allowed_actions: PiPhiWidgetInteractionAction[];
   default_action: PiPhiWidgetInteractionAction;
+  semantic_role?: PiPhiWidgetInteractionSemanticRole;
+  supported_inputs?: PiPhiWidgetInteractionInput[];
+  affordance?: PiPhiWidgetInteractionAffordance;
+  details_tab?: PiPhiWidgetInteractionDetailsTab;
+  capability_requirements?: string[];
+  risk?: PiPhiWidgetInteractionRisk;
+  protection?: PiPhiWidgetInteractionProtection;
+  accessibility_label?: string;
+  unavailable?: PiPhiWidgetInteractionUnavailableBehavior;
 }
 
 export interface PiPhiWidgetManifest {
@@ -57,6 +73,7 @@ export interface PiPhiWidgetManifest {
   themes?: PiPhiWidgetThemeDefinition[];
   default_theme_id?: string;
   presentation?: PiPhiWidgetPresentationContract;
+  interaction_contract_version?: "2";
   interaction_targets?: PiPhiWidgetInteractionTargetDefinition[];
   framework?: string;
   binding_modes: Array<"read" | "write" | "read-write">;
@@ -111,6 +128,15 @@ const ARCHIVE_INTEGRITY = /^sha256:[a-f0-9]{64}$/;
 const APPEARANCE_CONTROLS = new Set(["icon", "title", "surface", "opacity", "radius", "shadow"]);
 const INTERACTION_TARGET_KINDS = new Set(["card", "binding", "control"]);
 const INTERACTION_ACTIONS = new Set(["none", "more-info", "history", "popout", "navigate", "command", "refresh"]);
+const INTERACTION_SEMANTIC_ROLES = new Set(["details", "primary-control", "secondary-control", "drill-down", "media", "navigation"]);
+const INTERACTION_INPUTS = new Set(["pointer", "touch", "keyboard"]);
+const INTERACTION_AFFORDANCES = new Set(["none", "details", "inline", "overflow", "content"]);
+const INTERACTION_DETAILS_TABS = new Set(["overview", "controls", "history", "activity"]);
+const INTERACTION_RISKS = new Set(["none", "low", "confirmation", "privileged"]);
+const INTERACTION_PROTECTIONS = new Set(["none", "confirmation", "pin"]);
+const INTERACTION_UNAVAILABLE_BEHAVIORS = new Set(["hide", "disable"]);
+const V2_INTERACTION_FIELDS = ["semantic_role", "supported_inputs", "affordance", "details_tab", "capability_requirements", "risk", "protection", "accessibility_label", "unavailable"] as const;
+const V2_INTERACTION_TARGET_KEYS = new Set(["id", "label", "kind", "binding_slot_id", "allowed_actions", "default_action", ...V2_INTERACTION_FIELDS]);
 
 function isSafeAssetPath(value: unknown): boolean {
   if (typeof value !== "string" || !value.trim()) return false;
@@ -177,6 +203,7 @@ export function validateWidgetManifest(value: unknown): PiPhiWidgetManifestDiagn
     if (presentation.shell === "core" && presentation.content_surface !== "transparent") error("presentation.content_surface", "core_shell_requires_transparency", "Core-shell widgets must keep their content root transparent.");
   }
   const interactionTargets = Array.isArray(manifest.interaction_targets) ? manifest.interaction_targets : [];
+  if (manifest.interaction_contract_version !== undefined && manifest.interaction_contract_version !== "2") error("interaction_contract_version", "invalid_interaction_contract_version", "Use interaction contract version 2.");
   if (manifest.interaction_targets !== undefined && !Array.isArray(manifest.interaction_targets)) error("interaction_targets", "invalid_interaction_targets", "Interaction targets must be an array.");
   if (interactionTargets.length > 16) error("interaction_targets", "too_many_interaction_targets", "Declare no more than sixteen semantic interaction targets.");
   const interactionTargetIds = new Set<string>();
@@ -197,6 +224,41 @@ export function validateWidgetManifest(value: unknown): PiPhiWidgetManifestDiagn
     if (actions.length !== new Set(actions).size) error(`interaction_targets.${index}.allowed_actions`, "duplicate_interaction_action", "Allowed actions must be unique.");
     actions.forEach((action, actionIndex) => { if (!INTERACTION_ACTIONS.has(action)) error(`interaction_targets.${index}.allowed_actions.${actionIndex}`, "invalid_interaction_action", "Use a supported Core interaction action."); });
     if (!actions.includes(String(target.default_action ?? ""))) error(`interaction_targets.${index}.default_action`, "invalid_default_interaction", "Default action must be included in allowed actions.");
+    const hasV2Contract = manifest.interaction_contract_version === "2";
+    if (!hasV2Contract) {
+      for (const field of V2_INTERACTION_FIELDS) {
+        if (target[field] !== undefined) error(`interaction_targets.${index}.${field}`, "v2_interaction_metadata_requires_contract", "V2 interaction metadata requires interaction_contract_version '2'.");
+      }
+      return;
+    }
+    const unknownKeys = Object.keys(target).filter((key) => !V2_INTERACTION_TARGET_KEYS.has(key));
+    if (unknownKeys.length) error(`interaction_targets.${index}`, "invalid_v2_interaction_target_schema", `V2 targets contain unsupported fields: ${unknownKeys.join(", ")}.`);
+    for (const field of ["id", "label", "kind", "default_action", "semantic_role", "affordance", "risk", "protection", "accessibility_label", "unavailable"] as const) {
+      if (typeof target[field] !== "string") error(`interaction_targets.${index}.${field}`, "invalid_v2_interaction_field_type", `V2 target field '${field}' must be a string.`);
+    }
+    if (target.binding_slot_id !== undefined && typeof target.binding_slot_id !== "string") error(`interaction_targets.${index}.binding_slot_id`, "invalid_v2_interaction_field_type", "V2 binding_slot_id must be a string.");
+    if (!Array.isArray(target.allowed_actions)) error(`interaction_targets.${index}.allowed_actions`, "invalid_v2_interaction_field_type", "V2 allowed_actions must be an array.");
+    if (!INTERACTION_SEMANTIC_ROLES.has(String(target.semantic_role ?? ""))) error(`interaction_targets.${index}.semantic_role`, "missing_interaction_semantic_role", "V2 targets require a supported semantic role.");
+    const inputs = Array.isArray(target.supported_inputs) ? target.supported_inputs.map(String) : [];
+    if (inputs.length === 0) error(`interaction_targets.${index}.supported_inputs`, "missing_interaction_inputs", "V2 targets require at least one supported input.");
+    if (inputs.length !== new Set(inputs).size) error(`interaction_targets.${index}.supported_inputs`, "duplicate_interaction_input", "Supported inputs must be unique.");
+    inputs.forEach((input, inputIndex) => { if (!INTERACTION_INPUTS.has(input)) error(`interaction_targets.${index}.supported_inputs.${inputIndex}`, "invalid_interaction_input", "Use pointer, touch, or keyboard."); });
+    if (target.default_action !== "none" && !inputs.includes("keyboard")) error(`interaction_targets.${index}.supported_inputs`, "interactive_target_requires_keyboard", "Interactive v2 targets require a keyboard input route.");
+    if (!INTERACTION_AFFORDANCES.has(String(target.affordance ?? ""))) error(`interaction_targets.${index}.affordance`, "missing_interaction_affordance", "V2 targets require a supported affordance.");
+    if (target.details_tab !== undefined && !INTERACTION_DETAILS_TABS.has(String(target.details_tab))) error(`interaction_targets.${index}.details_tab`, "invalid_interaction_details_tab", "Use overview, controls, history, or activity.");
+    const requirements = Array.isArray(target.capability_requirements) ? target.capability_requirements.map(String) : [];
+    if (target.capability_requirements !== undefined && !Array.isArray(target.capability_requirements)) error(`interaction_targets.${index}.capability_requirements`, "invalid_interaction_capabilities", "Capability requirements must be an array.");
+    if (Array.isArray(target.capability_requirements) && target.capability_requirements.some((requirement) => typeof requirement !== "string")) error(`interaction_targets.${index}.capability_requirements`, "invalid_v2_interaction_field_type", "V2 capability requirements must be strings.");
+    if (requirements.length !== new Set(requirements).size) error(`interaction_targets.${index}.capability_requirements`, "duplicate_interaction_capability", "Capability requirements must be unique.");
+    requirements.forEach((requirement, requirementIndex) => { if (!LOCAL_ID.test(requirement)) error(`interaction_targets.${index}.capability_requirements.${requirementIndex}`, "invalid_interaction_capability", "Use a lowercase capability id."); });
+    if (!INTERACTION_RISKS.has(String(target.risk ?? ""))) error(`interaction_targets.${index}.risk`, "missing_interaction_risk", "V2 targets require a supported risk classification.");
+    if (!INTERACTION_PROTECTIONS.has(String(target.protection ?? ""))) error(`interaction_targets.${index}.protection`, "missing_interaction_protection", "V2 targets require a supported protection policy.");
+    if (target.risk === "privileged" && target.protection !== "pin") error(`interaction_targets.${index}.protection`, "privileged_interaction_requires_pin", "Privileged interaction targets require PIN protection.");
+    if (target.risk === "confirmation" && !["confirmation", "pin"].includes(String(target.protection))) error(`interaction_targets.${index}.protection`, "confirmation_interaction_requires_protection", "Confirmation-risk targets require confirmation or PIN protection.");
+    const accessibilityLabel = String(target.accessibility_label ?? "").trim();
+    if (!accessibilityLabel) error(`interaction_targets.${index}.accessibility_label`, "missing_interaction_accessibility_label", "V2 targets require an accessibility label.");
+    if (accessibilityLabel.length > 120) error(`interaction_targets.${index}.accessibility_label`, "interaction_accessibility_label_too_long", "Accessibility labels must be 120 characters or fewer.");
+    if (!INTERACTION_UNAVAILABLE_BEHAVIORS.has(String(target.unavailable ?? ""))) error(`interaction_targets.${index}.unavailable`, "missing_interaction_unavailable_behavior", "V2 targets require hide or disable behavior when unavailable.");
   });
   const settings = Array.isArray(manifest.settings) ? manifest.settings : [];
   const settingIds = new Set<string>();

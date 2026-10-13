@@ -37,3 +37,8 @@ npm run widget:conformance
 node scripts/verify-release.mjs "v$(node -p "require('./package.json').version")"
 npm pack --dry-run
 ```
+
+For releases that change interaction contracts, also confirm the two packaged
+schemas remain semantically identical to the corresponding Core contracts and
+exercise `piphi-widget testkit` with a complete package-relative 25-case report.
+Do not publish v2 interaction support if Core and SDK contract artifacts differ.

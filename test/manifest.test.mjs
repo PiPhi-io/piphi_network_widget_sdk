@@ -126,3 +126,65 @@ test("validates Core shell ownership and semantic interaction targets", () => {
   });
   assert.ok(excessiveTargets.some((item) => item.code === "too_many_interaction_targets"));
 });
+
+test("validates complete v2 interaction targets without weakening Core policy", () => {
+  const target = {
+    id: "primary-control",
+    label: "Toggle light",
+    kind: "control",
+    allowed_actions: ["command", "more-info"],
+    default_action: "command",
+    semantic_role: "primary-control",
+    supported_inputs: ["pointer", "touch", "keyboard"],
+    affordance: "inline",
+    details_tab: "controls",
+    capability_requirements: ["on_off"],
+    risk: "confirmation",
+    protection: "confirmation",
+    accessibility_label: "Toggle the kitchen light",
+    unavailable: "disable",
+  };
+  const contracted = {
+    ...valid,
+    interaction_contract_version: "2",
+    interaction_targets: [target],
+    security: { permissions: ["host.executeCommand"], allowed_commands: ["toggle"] },
+  };
+  assert.deepEqual(validateWidgetManifest(contracted), []);
+
+  const missingMetadata = validateWidgetManifest({
+    ...contracted,
+    interaction_targets: [{ ...target, accessibility_label: undefined }],
+  });
+  assert.ok(missingMetadata.some((item) => item.code === "missing_interaction_accessibility_label"));
+
+  const keyboardGap = validateWidgetManifest({
+    ...contracted,
+    interaction_targets: [{ ...target, supported_inputs: ["pointer", "touch"] }],
+  });
+  assert.ok(keyboardGap.some((item) => item.code === "interactive_target_requires_keyboard"));
+
+  const weakenedProtection = validateWidgetManifest({
+    ...contracted,
+    interaction_targets: [{ ...target, risk: "privileged", protection: "confirmation" }],
+  });
+  assert.ok(weakenedProtection.some((item) => item.code === "privileged_interaction_requires_pin"));
+
+  const undeclaredContract = validateWidgetManifest({
+    ...contracted,
+    interaction_contract_version: undefined,
+  });
+  assert.ok(undeclaredContract.some((item) => item.code === "v2_interaction_metadata_requires_contract"));
+
+  const openSchema = validateWidgetManifest({
+    ...contracted,
+    interaction_targets: [{ ...target, executable: "publisher-code" }],
+  });
+  assert.ok(openSchema.some((item) => item.code === "invalid_v2_interaction_target_schema"));
+
+  const coercedField = validateWidgetManifest({
+    ...contracted,
+    interaction_targets: [{ ...target, accessibility_label: 42 }],
+  });
+  assert.ok(coercedField.some((item) => item.code === "invalid_v2_interaction_field_type"));
+});
