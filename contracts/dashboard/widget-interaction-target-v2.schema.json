@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://piphi.io/contracts/dashboard/widget-interaction-target-v2.schema.json",
+  "title": "PiPhi Widget semantic interaction target v2",
+  "description": "One package-declared target executed through the trusted Core interaction host. Permission and capability resolution remain Core-owned semantic checks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "label", "kind", "allowed_actions", "default_action", "semantic_role", "supported_inputs", "affordance", "risk", "protection", "accessibility_label", "unavailable"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+    "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "kind": { "enum": ["card", "binding", "control"] },
+    "binding_slot_id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+    "allowed_actions": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["none", "more-info", "history", "popout", "navigate", "command", "refresh"] } },
+    "default_action": { "enum": ["none", "more-info", "history", "popout", "navigate", "command", "refresh"] },
+    "semantic_role": { "enum": ["details", "primary-control", "secondary-control", "drill-down", "media", "navigation"] },
+    "supported_inputs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["pointer", "touch", "keyboard"] } },
+    "affordance": { "enum": ["none", "details", "inline", "overflow", "content"] },
+    "details_tab": { "enum": ["overview", "controls", "history", "activity"] },
+    "capability_requirements": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" } },
+    "risk": { "enum": ["none", "low", "confirmation", "privileged"] },
+    "protection": { "enum": ["none", "confirmation", "pin"] },
+    "accessibility_label": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "unavailable": { "enum": ["hide", "disable"] }
+  },
+  "allOf": [
+    { "if": { "properties": { "kind": { "const": "binding" } } }, "then": { "required": ["binding_slot_id"] }, "else": { "not": { "required": ["binding_slot_id"] } } },
+    { "if": { "properties": { "default_action": { "not": { "const": "none" } } } }, "then": { "properties": { "supported_inputs": { "contains": { "const": "keyboard" } } } } },
+    { "if": { "properties": { "risk": { "const": "privileged" } } }, "then": { "properties": { "protection": { "const": "pin" } } } },
+    { "if": { "properties": { "risk": { "const": "confirmation" } } }, "then": { "properties": { "protection": { "enum": ["confirmation", "pin"] } } } }
+  ],
+  "x-piphi-semantic-invariants": [
+    "default_action must be present in allowed_actions",
+    "navigate requires host.navigate permission",
+    "command requires host.executeCommand permission",
+    "capability requirements must resolve before activation",
+    "Core may strengthen but never weaken risk or protection"
+  ]
+}

@@ -1,11 +1,12 @@
 {
   "name": "piphi-network-widget-sdk",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "TypeScript SDK for building declarative and sandboxed PiPhi dashboard widgets.",
   "type": "module",
   "sideEffects": false,
   "files": [
     "dist",
+    "contracts",
     "experience-kit.css",
     "bin",
     "simulator",
@@ -36,6 +37,12 @@
       "types": "./dist/manifest.d.ts",
       "import": "./dist/manifest.js"
     },
+    "./interaction-testkit": {
+      "types": "./dist/interaction-testkit.d.ts",
+      "import": "./dist/interaction-testkit.js"
+    },
+    "./contracts/dashboard/widget-interaction-target-v2.schema.json": "./contracts/dashboard/widget-interaction-target-v2.schema.json",
+    "./contracts/dashboard/widget-interaction-testkit-v1.schema.json": "./contracts/dashboard/widget-interaction-testkit-v1.schema.json",
     "./declarative": {
       "types": "./dist/declarative.d.ts",
       "import": "./dist/declarative.js"
@@ -56,6 +63,7 @@
     "test": "npm run build && node --test test/*.test.mjs",
     "widget:create": "node bin/piphi-widget.mjs create",
     "widget:validate": "node bin/piphi-widget.mjs validate",
+    "widget:testkit": "node bin/piphi-widget.mjs testkit",
     "widget:conformance": "node scripts/verify-reference-widgets.mjs",
     "widget:dev": "node bin/piphi-widget.mjs dev",
     "widget:pack": "node bin/piphi-widget.mjs pack",

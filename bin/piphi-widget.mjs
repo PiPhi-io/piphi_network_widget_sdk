@@ -6,6 +6,7 @@ import { createServer } from "node:http";
 import { extname, relative, resolve, sep } from "node:path";
 import { spawn } from "node:child_process";
 import { validateWidgetManifest } from "../dist/manifest.js";
+import { validateWidgetInteractionTestKitReport } from "../dist/interaction-testkit.js";
 
 const [, , command = "help", ...args] = process.argv;
 const cwd = process.cwd();
@@ -30,6 +31,43 @@ function templateContract(template) {
   return { binding_modes: ["read"], value_kinds: ["numeric", "text", "boolean", "enum"], permissions: [], capability_requirements: [] };
 }
 
+function templateInteractionTarget(template) {
+  const base = {
+    id: "card",
+    label: "Open widget details",
+    kind: "card",
+    allowed_actions: ["more-info"],
+    default_action: "more-info",
+    semantic_role: "details",
+    supported_inputs: ["pointer", "touch", "keyboard"],
+    affordance: "details",
+    details_tab: "overview",
+    capability_requirements: [],
+    risk: "low",
+    protection: "none",
+    accessibility_label: "Open widget details",
+    unavailable: "disable",
+  };
+  if (template === "control" || template === "multi-device") return {
+    ...base,
+    id: "primary-control",
+    label: "Toggle device",
+    kind: "control",
+    allowed_actions: ["command", "more-info"],
+    default_action: "command",
+    semantic_role: "primary-control",
+    affordance: "inline",
+    details_tab: "controls",
+    capability_requirements: template === "control" ? ["on_off"] : ["multi_device"],
+    risk: "confirmation",
+    protection: "confirmation",
+    accessibility_label: "Toggle the connected device",
+  };
+  if (template === "chart") return { ...base, label: "Open reading history", allowed_actions: ["history", "more-info"], default_action: "history", semantic_role: "drill-down", details_tab: "history", capability_requirements: ["history"], accessibility_label: "Open recent reading history" };
+  if (template === "camera") return { ...base, label: "Open camera details", semantic_role: "media", affordance: "content", capability_requirements: ["camera_snapshot"], accessibility_label: "Open camera details" };
+  return base;
+}
+
 async function createWidget(nameArg, template = "data") {
   const name = slug(nameArg);
   const target = resolve(cwd, name);
@@ -46,7 +84,9 @@ async function createWidget(nameArg, template = "data") {
     binding_modes: contract.binding_modes,
     value_kinds: contract.value_kinds,
     capability_requirements: contract.capability_requirements,
-    sdk_compatibility: { minimum: "0.3.0" },
+    sdk_compatibility: { minimum: "0.6.2" },
+    interaction_contract_version: "2",
+    interaction_targets: [templateInteractionTarget(template)],
     conformance: { accessibility: "wcag2.2-aa", keyboard: true, themes: ["light", "dark"], directions: ["ltr", "rtl"], states: ["loading", "live", "stale", "offline", "reconnecting", "denied", "error"] },
     settings_schema_version: "1",
     settings: [{ id: "title", type: "text", label: "Title", default: "My widget" }, { id: "fixture", type: template === "multi-device" ? "devices" : "device", label: template === "multi-device" ? "Devices" : "Device", required: true }],
@@ -63,7 +103,7 @@ async function createWidget(nameArg, template = "data") {
   await writeFile(resolve(target, "package.json"), json({
     name, version: "0.1.0", private: true, type: "module",
     scripts: { build: "mkdir -p dist && cp src/widget.js dist/widget.js", dev: "piphi-widget dev", validate: "piphi-widget validate", conformance: "piphi-widget conformance", test: "node --test test/*.test.mjs", pack: "piphi-widget pack" },
-    dependencies: { "piphi-network-widget-sdk": "^0.3.0" },
+    dependencies: { "piphi-network-widget-sdk": "^0.6.2" },
   }));
   await writeFile(resolve(target, "src/widget.js"), referenceWidgetSource(template));
   await writeFile(resolve(target, "test/widget.test.mjs"), referenceTestSource());
@@ -108,6 +148,16 @@ async function validate(pathArg, quiet = false) {
     for (const item of diagnostics) console.log(`${item.severity === "error" ? "✗" : "!"} ${item.path} [${item.code}] ${item.message}`);
   }
   if (diagnostics.some((item) => item.severity === "error")) process.exitCode = 1;
+  return { path, value, diagnostics };
+}
+
+async function validateInteractionTestKit(pathArg = "certification/widget-interactions.json") {
+  const path = resolve(cwd, pathArg);
+  const value = JSON.parse(await readFile(path, "utf8"));
+  const diagnostics = validateWidgetInteractionTestKitReport(value);
+  if (!diagnostics.length) console.log(`✓ ${relative(cwd, path)} contains all 25 portable interaction certification cases`);
+  for (const item of diagnostics) console.log(`✗ ${item.path} [${item.code}] ${item.message}`);
+  if (diagnostics.length) process.exitCode = 1;
   return { path, value, diagnostics };
 }
 
@@ -204,11 +254,12 @@ async function dev(portArg = "4179") {
   process.once("SIGINT", stop); process.once("SIGTERM", stop);
 }
 
-function help() { console.log(`piphi-widget <command>\n\n  create <name> [--template data|control|chart|camera|multi-device]\n                      Scaffold a localized public-contract widget\n  validate [manifest] Validate settings, localization, layout and security\n  conformance         Gate compatibility, accessibility, security and public imports\n  dev [port]          Run the local host simulator with hot reload\n  pack [manifest]     Conformance-check, add entry integrity and npm-pack\n  preview [title]     Write light/dark SVG previews\n  doctor              Check the current widget project\n`); }
+function help() { console.log(`piphi-widget <command>\n\n  create <name> [--template data|control|chart|camera|multi-device]\n                      Scaffold a localized public-contract widget\n  validate [manifest] Validate settings, localization, layout and security\n  testkit [report]    Validate the portable 25-case interaction report\n  conformance         Gate compatibility, accessibility, security and public imports\n  dev [port]          Run the local host simulator with hot reload\n  pack [manifest]     Conformance-check, add entry integrity and npm-pack\n  preview [title]     Write light/dark SVG previews\n  doctor              Check the current widget project\n`); }
 
 async function main() {
   if (command === "create") { const parsed = parseCreateArgs(args); return createWidget(parsed.name, parsed.template); }
   if (command === "validate") return validate(args[0]);
+  if (command === "testkit") return validateInteractionTestKit(args[0]);
   if (command === "conformance") return conformance(args[0]);
   if (command === "dev") return dev(args[0]);
   if (command === "pack") return pack(args[0]);

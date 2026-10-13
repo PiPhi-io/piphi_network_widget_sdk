@@ -1,3 +1,5 @@
+import type { PiPhiWidgetInteractionTargetDefinition } from "./manifest.js";
+
 export const PIPHI_WIDGET_HOST_PROTOCOL = "piphi.widget.host" as const;
 export const PIPHI_WIDGET_HOST_VERSION = "1" as const;
 
@@ -82,17 +84,11 @@ export interface PiPhiWidgetPackageContext {
   valueKinds?: string[];
   capabilityRequirements?: string[];
   themeId?: string;
+  interactionContractVersion?: "2";
   interactionTargets?: PiPhiWidgetInteractionTarget[];
 }
 
-export interface PiPhiWidgetInteractionTarget {
-  id: string;
-  label: string;
-  kind: "card" | "binding" | "control";
-  binding_slot_id?: string;
-  allowed_actions: Array<"none" | "more-info" | "history" | "popout" | "navigate" | "command" | "refresh">;
-  default_action: "none" | "more-info" | "history" | "popout" | "navigate" | "command" | "refresh";
-}
+export type PiPhiWidgetInteractionTarget = PiPhiWidgetInteractionTargetDefinition;
 
 export interface PiPhiWidgetExperienceTheme {
   id: string;

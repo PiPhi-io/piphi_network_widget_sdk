@@ -15,6 +15,8 @@ for (const template of ["data", "control", "chart", "camera", "multi-device"]) t
     assert.equal(manifest.id, "com.example.kitchen.climate");
     assert.equal(manifest.translations.ar["widget.title"], "أداتي");
     assert.equal(manifest.conformance.accessibility, "wcag2.2-aa");
+    assert.equal(manifest.interaction_contract_version, "2");
+    assert.ok(manifest.interaction_targets[0].supported_inputs.includes("keyboard"));
     assert.ok(manifest.conformance.states.includes("reconnecting"));
     if (["control", "multi-device"].includes(template)) assert.ok(manifest.security.allowed_commands.includes("toggle"));
     if (template === "camera") assert.deepEqual(manifest.security.permissions, ["camera"]);
@@ -23,6 +25,25 @@ for (const template of ["data", "control", "chart", "camera", "multi-device"]) t
     await import("node:fs/promises").then(({ mkdir, copyFile }) => mkdir(resolve(project, "dist"), { recursive: true }).then(() => copyFile(resolve(project, "src/widget.js"), resolve(project, "dist/widget.js"))));
     const conformance = spawnSync(process.execPath, [resolve("bin/piphi-widget.mjs"), "conformance"], { cwd: project, encoding: "utf8" });
     assert.equal(conformance.status, 0, conformance.stderr || conformance.stdout);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI validates portable interaction TestKit reports", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "piphi-widget-sdk-testkit-"));
+  try {
+    const { PIPHI_WIDGET_INTERACTION_TESTKIT_CASES } = await import("../dist/interaction-testkit.js");
+    const reportPath = resolve(directory, "widget-interactions.json");
+    await writeFile(reportPath, JSON.stringify({
+      schema_version: "1",
+      package_id: "com.example.package",
+      widget_id: "example-widget",
+      results: PIPHI_WIDGET_INTERACTION_TESTKIT_CASES.map((caseId) => ({ case_id: caseId, passed: true, evidence: `evidence/${caseId}.json` })),
+    }));
+    const checked = spawnSync(process.execPath, [resolve("bin/piphi-widget.mjs"), "testkit", reportPath], { cwd: directory, encoding: "utf8" });
+    assert.equal(checked.status, 0, checked.stderr || checked.stdout);
+    assert.match(checked.stdout, /all 25 portable interaction certification cases/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

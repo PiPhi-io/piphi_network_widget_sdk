@@ -60,6 +60,10 @@ npm run dev
 
 The scaffold includes a declarative manifest, settings, English/Spanish/Arabic
 catalogs, RTL-safe reference runtime, light/dark previews, and a contract test.
+New scaffolds opt into interaction contract v2 and declare one semantic target
+with pointer, touch, keyboard, risk, protection, capability, unavailable-state,
+and accessible-name metadata. Core remains responsible for resolving and
+executing the declared action.
 The local simulator provides loading/live/stale/offline/reconnecting/denied/error
 fixtures, command success/rejection/timeout behavior, explicit permission
 diagnostics, desktop/tablet/phone resize, light/dark themes, locale/RTL switching,
@@ -207,6 +211,7 @@ guess what a click inside arbitrary markup represents:
 
 ```json
 {
+  "interaction_contract_version": "2",
   "interaction_targets": [
     {
       "id": "temperature",
@@ -214,11 +219,27 @@ guess what a click inside arbitrary markup represents:
       "kind": "binding",
       "binding_slot_id": "temperature",
       "allowed_actions": ["more-info", "history", "popout"],
-      "default_action": "more-info"
+      "default_action": "more-info",
+      "semantic_role": "details",
+      "supported_inputs": ["pointer", "touch", "keyboard"],
+      "affordance": "details",
+      "details_tab": "overview",
+      "capability_requirements": ["temperature"],
+      "risk": "low",
+      "protection": "none",
+      "accessibility_label": "Open temperature details",
+      "unavailable": "disable"
     }
   ]
 }
 ```
+
+Legacy targets may omit `interaction_contract_version` and continue to use the
+v1 field set. Once a widget declares version `2`, every target must supply the
+complete v2 contract. Interactive defaults require a keyboard route;
+confirmation-risk actions require confirmation or PIN protection; privileged
+actions require PIN protection. `command` and `navigate` still require their
+host permissions, and Core may strengthen but never weaken publisher policy.
 
 Activate a declared target from package content and let Core perform the trusted
 shell behavior:
@@ -232,6 +253,24 @@ allow-list and current permissions, and performs it in the trusted shell. A
 `command` action requires
 `host.executeCommand` permission and remains subject to the package's command
 allow-list.
+
+### Portable interaction certification
+
+Package-owned v2 interactions use the public 25-case TestKit contract. Import
+`validateWidgetInteractionTestKitReport` from
+`piphi-network-widget-sdk/interaction-testkit`, or validate a completed report
+from the command line:
+
+```bash
+npx piphi-widget testkit certification/widget-interactions.json
+```
+
+The report must contain each required case exactly once and every case must
+pass. Evidence is a bounded package-relative artifact reference; URLs,
+traversal, freeform notes, and trusted `core-profile:` references are rejected.
+The host-owned Core profile mechanism stays outside this portable package
+report. The exact JSON schemas ship at the two exported
+`contracts/dashboard/...` package subpaths.
 
 ## Install
 

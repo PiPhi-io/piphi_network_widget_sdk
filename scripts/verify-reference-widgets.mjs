@@ -18,7 +18,9 @@ try {
     await mkdir(resolve(project, "dist"), { recursive: true });
     await copyFile(resolve(project, "src/widget.js"), resolve(project, "dist/widget.js"));
     const manifest = JSON.parse(await readFile(resolve(project, "widget.manifest.json"), "utf8"));
-    assert.equal(manifest.sdk_compatibility.minimum, "0.3.0");
+    assert.equal(manifest.sdk_compatibility.minimum, "0.6.2");
+    assert.equal(manifest.interaction_contract_version, "2");
+    assert.equal(manifest.interaction_targets.length, 1);
     const checked = spawnSync(process.execPath, [cli, "conformance"], { cwd: project, encoding: "utf8" });
     assert.equal(checked.status, 0, checked.stderr || checked.stdout);
     console.log(`✓ ${template} reference widget`);
