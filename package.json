@@ -33,6 +33,10 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js"
     },
+    "./camera-session": {
+      "types": "./dist/camera-session.d.ts",
+      "import": "./dist/camera-session.js"
+    },
     "./manifest": {
       "types": "./dist/manifest.d.ts",
       "import": "./dist/manifest.js"

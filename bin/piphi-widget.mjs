@@ -26,7 +26,7 @@ function parseCreateArgs(values) {
 function templateContract(template) {
   if (template === "control") return { binding_modes: ["read-write"], value_kinds: ["boolean", "command"], permissions: ["host.executeCommand"], allowed_commands: ["set", "toggle"], capability_requirements: ["on_off"] };
   if (template === "chart") return { binding_modes: ["read"], value_kinds: ["numeric"], permissions: [], capability_requirements: ["history"] };
-  if (template === "camera") return { binding_modes: ["read"], value_kinds: ["json"], permissions: ["camera"], capability_requirements: ["camera_snapshot"] };
+  if (template === "camera") return { binding_modes: ["read"], value_kinds: ["json"], permissions: ["camera"], capability_requirements: ["camera_stream"] };
   if (template === "multi-device") return { binding_modes: ["read-write"], value_kinds: ["numeric", "boolean", "enum", "command"], permissions: ["host.executeCommand"], allowed_commands: ["set", "toggle"], capability_requirements: ["multi_device"] };
   return { binding_modes: ["read"], value_kinds: ["numeric", "text", "boolean", "enum"], permissions: [], capability_requirements: [] };
 }
@@ -64,7 +64,7 @@ function templateInteractionTarget(template) {
     accessibility_label: "Toggle the connected device",
   };
   if (template === "chart") return { ...base, label: "Open reading history", allowed_actions: ["history", "more-info"], default_action: "history", semantic_role: "drill-down", details_tab: "history", capability_requirements: ["history"], accessibility_label: "Open recent reading history" };
-  if (template === "camera") return { ...base, label: "Open camera details", semantic_role: "media", affordance: "content", capability_requirements: ["camera_snapshot"], accessibility_label: "Open camera details" };
+  if (template === "camera") return { ...base, label: "Open camera details", semantic_role: "media", affordance: "content", capability_requirements: ["camera_stream"], accessibility_label: "Open camera details" };
   return base;
 }
 
@@ -90,7 +90,9 @@ async function createWidget(nameArg, template = "data") {
     conformance: { accessibility: "wcag2.2-aa", keyboard: true, themes: ["light", "dark"], directions: ["ltr", "rtl"], states: ["loading", "live", "stale", "offline", "reconnecting", "denied", "error"] },
     settings_schema_version: "1",
     settings: [{ id: "title", type: "text", label: "Title", default: "My widget" }, { id: "fixture", type: template === "multi-device" ? "devices" : "device", label: template === "multi-device" ? "Devices" : "Device", required: true }],
-    layout: { min_height: 120, default_height: 180, max_height: 420 },
+    layout: template === "camera"
+      ? { min_height: 240, default_height: 320, max_height: 720 }
+      : { min_height: 120, default_height: 180, max_height: 420 },
     previews: { light: "./previews/light.svg", dark: "./previews/dark.svg" },
     translations: {
       en: { "widget.title": "My widget", "widget.waiting": "Waiting for live data" },
@@ -115,14 +117,66 @@ async function createWidget(nameArg, template = "data") {
 }
 
 function referenceWidgetSource(template = "data") {
+  if (template === "camera") return cameraWidgetSource();
   const action = template === "control" || template === "multi-device"
     ? `\nbutton.addEventListener("click", async () => { button.disabled = true; try { await host.executeCommand({ command: "toggle", value: true }); } finally { button.disabled = false; } });`
     : "";
-  const body = template === "chart" ? '<svg role="img" aria-label="Recent readings" viewBox="0 0 200 64"><polyline fill="none" stroke="currentColor" points="0,55 40,35 80,42 120,12 160,26 200,8"/></svg>'
-    : template === "camera" ? '<figure><div role="img" aria-label="Camera snapshot fixture">Camera preview</div><figcaption>Local snapshot</figcaption></figure>'
-    : '<output aria-live="polite">—</output>';
+  const body = template === "chart" ? '<svg role="img" aria-label="Recent readings" viewBox="0 0 200 64"><polyline fill="none" stroke="currentColor" points="0,55 40,35 80,42 120,12 160,26 200,8"/></svg>' : '<output aria-live="polite">—</output>';
   const control = template === "control" || template === "multi-device" ? '<button type="button">Toggle</button>' : "";
   return `import { getInjectedPiPhiWidgetHost } from "piphi-network-widget-sdk";\n\nconst host = getInjectedPiPhiWidgetHost();\nconst root = document.querySelector("#piphi-widget-root") || document.body;\nconst context = await host.getContext();\nconst title = await host.translate("widget.title");\nroot.innerHTML = \`<main dir="\${context.localization?.direction || "ltr"}"><strong>\${title}</strong>${body}${control}<p role="status">loading</p></main>\`;\nconst output = root.querySelector("output");\nconst status = root.querySelector('[role="status"]');\nconst button = root.querySelector("button");\nconst stop = await host.subscribeState({}, (event) => {\n  status.textContent = event.status || event.kind;\n  if (event.kind !== "snapshot" && event.kind !== "point") return;\n  const data = event.data?.primaryState ?? event.data?.value ?? event.data;\n  if (output) output.textContent = String(data ?? "—");\n});${action}\nwindow.addEventListener("pagehide", stop, { once: true });\nawait host.ready({ height: 180 });\n`;
+}
+
+function cameraWidgetSource() {
+  return `import { BrokeredCameraSession, createWidgetHostCameraTransport, getInjectedPiPhiWidgetHost } from "piphi-network-widget-sdk";
+
+const host = getInjectedPiPhiWidgetHost();
+const root = document.querySelector("#piphi-widget-root") || document.body;
+const [context, title, permissions] = await Promise.all([
+  host.getContext(),
+  host.translate("widget.title"),
+  host.listPermissions(),
+]);
+root.innerHTML = \`<main dir="\${context.localization?.direction || "ltr"}"><strong>\${title}</strong><video autoplay muted playsinline aria-label="\${title}"></video><p role="status" aria-live="polite">Connecting…</p><button type="button">Reconnect</button></main>\`;
+const video = root.querySelector("video");
+const status = root.querySelector('[role="status"]');
+const reconnect = root.querySelector("button");
+let session;
+
+async function disconnect() {
+  const active = session;
+  session = undefined;
+  video.srcObject = null;
+  if (active) await active.close();
+}
+
+async function connect() {
+  reconnect.disabled = true;
+  status.textContent = "Connecting…";
+  await disconnect();
+  try {
+    if (!permissions.includes("camera")) throw new Error("Camera permission is required.");
+    session = new BrokeredCameraSession({
+      transport: createWidgetHostCameraTransport(host),
+      onTrack(stream) {
+        video.srcObject = stream;
+        status.textContent = "Live";
+        void video.play().catch(() => undefined);
+      },
+    });
+    await session.start();
+  } catch (error) {
+    status.textContent = error instanceof Error ? error.message : "Camera unavailable";
+    await disconnect();
+  } finally {
+    reconnect.disabled = false;
+  }
+}
+
+reconnect.addEventListener("click", connect);
+window.addEventListener("pagehide", () => void disconnect(), { once: true });
+await host.ready({ height: 320 });
+await connect();
+`;
 }
 
 function referenceTestSource() {
