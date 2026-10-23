@@ -19,7 +19,15 @@ for (const template of ["data", "control", "chart", "camera", "multi-device"]) t
     assert.ok(manifest.interaction_targets[0].supported_inputs.includes("keyboard"));
     assert.ok(manifest.conformance.states.includes("reconnecting"));
     if (["control", "multi-device"].includes(template)) assert.ok(manifest.security.allowed_commands.includes("toggle"));
-    if (template === "camera") assert.deepEqual(manifest.security.permissions, ["camera"]);
+    if (template === "camera") {
+      assert.deepEqual(manifest.security.permissions, ["camera"]);
+      assert.deepEqual(manifest.capability_requirements, ["camera_stream"]);
+      assert.equal(manifest.layout.default_height, 320);
+      const source = await readFile(resolve(project, "src/widget.js"), "utf8");
+      assert.match(source, /BrokeredCameraSession/);
+      assert.match(source, /createWidgetHostCameraTransport/);
+      assert.doesNotMatch(source, /camera_snapshot/);
+    }
     const checked = spawnSync(process.execPath, [resolve("bin/piphi-widget.mjs"), "validate", resolve(project, "widget.manifest.json")], { cwd: project, encoding: "utf8" });
     assert.equal(checked.status, 0, checked.stderr || checked.stdout);
     await import("node:fs/promises").then(({ mkdir, copyFile }) => mkdir(resolve(project, "dist"), { recursive: true }).then(() => copyFile(resolve(project, "src/widget.js"), resolve(project, "dist/widget.js"))));

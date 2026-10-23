@@ -55,6 +55,7 @@ export interface PiPhiWidgetCameraOfferParams {
 export interface PiPhiWidgetCameraSession {
   sdp: string;
   sessionId: string;
+  type?: "answer";
   expiresAt?: string;
 }
 
