@@ -12,7 +12,7 @@ for (const packageName of ["whole-home-energy", "home-health"]) {
       "utf8",
     ));
     assert.equal(source.identity.version, "0.1.2", "changed pilot artifacts must use a new immutable version");
-    assert.equal(source.sdk_version_range, ">=0.6.1,<0.7");
+    assert.equal(source.sdk_version_range, ">=0.6.1,<0.8");
     const slots = new Set(source.widgets[0].binding_slots.map((slot) => slot.id));
     assert.deepEqual(validateDeclarativeWidgetRecipe(source.widgets[0].recipe, {
       bindingSlotIds: [...slots],
