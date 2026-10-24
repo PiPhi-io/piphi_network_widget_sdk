@@ -159,6 +159,25 @@ test("activates a declared semantic target through the trusted host", async () =
   client.destroy();
 });
 
+test("asks the trusted host to open integration onboarding", async () => {
+  const harness = createWindowHarness();
+  const client = createPiPhiWidgetClient({ window: harness.window });
+  const onboarding = client.openOnboarding({ integrationId: "camera-stream" });
+  const request = harness.requests[0].payload;
+  assert.equal(request.method, "host.openOnboarding");
+  assert.deepEqual(request.params, { integrationId: "camera-stream" });
+  harness.dispatch({
+    protocol: PIPHI_WIDGET_HOST_PROTOCOL,
+    version: PIPHI_WIDGET_HOST_VERSION,
+    type: "piphi.widget.response",
+    requestId: request.requestId,
+    success: true,
+    result: { ok: true, integrationId: "camera-stream" },
+  });
+  assert.deepEqual(await onboarding, { ok: true, integrationId: "camera-stream" });
+  client.destroy();
+});
+
 test("brokers camera sessions without accepting camera targets or credentials", async () => {
   const harness = createWindowHarness();
   const client = createPiPhiWidgetClient({ window: harness.window });

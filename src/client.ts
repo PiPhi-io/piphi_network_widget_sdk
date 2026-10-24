@@ -45,6 +45,13 @@ export interface PiPhiWidgetInteractionParams {
   args?: Record<string, unknown>;
 }
 
+export interface PiPhiWidgetOnboardingParams {
+  /** Integration to configure. Core may restrict this to the widget's declared owner. */
+  integrationId?: string;
+  /** Existing saved configuration to resume or edit. */
+  configId?: string;
+}
+
 export interface PiPhiWidgetCameraOfferParams {
   slotId?: string;
   sdp: string;
@@ -83,6 +90,9 @@ export interface PiPhiWidgetHostApi {
     targetId: string,
     params?: PiPhiWidgetInteractionParams,
   ): Promise<{ ok: boolean; action: string; targetId: string }>;
+  openOnboarding(
+    params?: PiPhiWidgetOnboardingParams,
+  ): Promise<{ ok: boolean; integrationId: string }>;
   openCameraSession(params: PiPhiWidgetCameraOfferParams): Promise<PiPhiWidgetCameraSession>;
   closeCameraSession(sessionId: string): Promise<{ ok: boolean }>;
   setHeight(height: number): Promise<{ ok: boolean; height: number; instanceId?: string }>;
@@ -236,6 +246,7 @@ export function createPiPhiWidgetClient(
     navigate: (params) => request("host.navigate", { ...params }),
     executeCommand: (params) => request("host.executeCommand", { ...params }),
     activateInteraction: (targetId, params = {}) => request("host.activateInteraction", { ...params, targetId }),
+    openOnboarding: (params = {}) => request("host.openOnboarding", { ...params }),
     openCameraSession: (params) => request("host.openCameraSession", { ...params }),
     closeCameraSession: (sessionId) => request("host.closeCameraSession", { sessionId }),
     setHeight: (height) => request("host.setHeight", { height }),
