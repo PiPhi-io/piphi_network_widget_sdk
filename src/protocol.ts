@@ -16,6 +16,7 @@ export type PiPhiWidgetHostMethod =
   | "host.navigate"
   | "host.executeCommand"
   | "host.activateInteraction"
+  | "host.openOnboarding"
   | "host.openCameraSession"
   | "host.closeCameraSession"
   | "host.setHeight"
@@ -24,6 +25,7 @@ export type PiPhiWidgetHostMethod =
 export type PiPhiWidgetPermission =
   | "host.navigate"
   | "host.executeCommand"
+  | "host.openOnboarding"
   | "navigate"
   | "command"
   | "camera"

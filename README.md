@@ -372,10 +372,13 @@ await peerConnection.setRemoteDescription({ type: "answer", sdp: cameraSession.s
 await host.closeCameraSession(cameraSession.sessionId);
 
 await host.navigate({ path: "/dashboards", newTab: false });
+await host.openOnboarding({ integrationId: "camera-stream" });
 ```
 
 - `host.executeCommand` requires `host.executeCommand`.
 - `host.navigate` requires `host.navigate`.
+- `host.openOnboarding` requires `host.openOnboarding`; Core owns the setup
+  mode, permission checks, and navigation destination.
 - `host.openCameraSession` and `host.closeCameraSession` require `camera` and
   are scoped entirely to the saved camera binding.
 - Context, settings, binding, and state reads do not require an extra host permission.
