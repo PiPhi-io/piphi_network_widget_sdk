@@ -84,7 +84,7 @@ async function createWidget(nameArg, template = "data") {
     binding_modes: contract.binding_modes,
     value_kinds: contract.value_kinds,
     capability_requirements: contract.capability_requirements,
-    sdk_compatibility: { minimum: "0.7.0" },
+    sdk_compatibility: { minimum: "0.8.0" },
     interaction_contract_version: "2",
     interaction_targets: [templateInteractionTarget(template)],
     conformance: { accessibility: "wcag2.2-aa", keyboard: true, themes: ["light", "dark"], directions: ["ltr", "rtl"], states: ["loading", "live", "stale", "offline", "reconnecting", "denied", "error"] },
@@ -105,7 +105,7 @@ async function createWidget(nameArg, template = "data") {
   await writeFile(resolve(target, "package.json"), json({
     name, version: "0.1.0", private: true, type: "module",
     scripts: { build: "mkdir -p dist && cp src/widget.js dist/widget.js", dev: "piphi-widget dev", validate: "piphi-widget validate", conformance: "piphi-widget conformance", test: "node --test test/*.test.mjs", pack: "piphi-widget pack" },
-    dependencies: { "piphi-network-widget-sdk": "^0.7.0" },
+    dependencies: { "piphi-network-widget-sdk": "^0.8.0" },
   }));
   await writeFile(resolve(target, "src/widget.js"), referenceWidgetSource(template));
   await writeFile(resolve(target, "test/widget.test.mjs"), referenceTestSource());

@@ -6,3 +6,4 @@ export * from "./optimistic-control.js";
 export * from "./recovery-session.js";
 export * from "./interaction-testkit.js";
 export * from "./camera-session.js";
+export * from "./runtime-contract.js";

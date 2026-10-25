@@ -2,6 +2,8 @@
 
 `piphi-network-widget-sdk` is the browser-safe TypeScript SDK for building sandboxed PiPhi dashboard widgets.
 
+Widget packages run inside Core's widget host and do not own listener ports. Package sources and registry entries declare `{ "version": 1, "port_binding": "not_applicable" }`; use `PIPHI_WIDGET_RUNTIME_CONTRACT` when authoring this metadata programmatically.
+
 The SDK provides the versioned host protocol, portable widget and binding types, a typed client, lifecycle subscriptions, device state reads, permission-aware commands, navigation, settings, and responsive height reporting. Device integrations and server runtimes remain in PiPhi's Python Runtime SDK.
 
 ### Predictable recovery from interrupted data
